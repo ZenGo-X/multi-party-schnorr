@@ -1,0 +1,13 @@
+[package]
+name = "multisig_schnorr"
+version = "0.1.0"
+authors = [
+    "Gary <gary@kzencorp.com>"
+]
+
+[lib]
+name = "multisig_schnorr"
+crate-type = ["dylib"]
+
+[dependencies]
+
