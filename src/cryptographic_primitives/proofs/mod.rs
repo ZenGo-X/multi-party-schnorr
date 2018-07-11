@@ -14,18 +14,22 @@
     @license GPL-3.0+ <https://github.com/KZen-networks/multi-party-ecdsa/blob/master/LICENSE>
 */
 
-pub mod elliptic;
-pub use elliptic::point::Point as Point;
+use std::fmt;
+use std::error::Error;
 
-// TODO: When we will have more than one type of elliptic curve, add as features
-pub use elliptic::curves::secp256_k1::EC as EC;
-pub use elliptic::curves::secp256_k1::SK as SK;
-pub use elliptic::curves::secp256_k1::PK as PK;
+pub mod dlog_zk_protocol;
 
-pub mod arithmetic;
-// TODO: When we will have more than one type of big num library, add as features
-pub use arithmetic::big_gmp::BigInt as BigInt;
+#[derive(Debug)]
+pub struct ProofError;
 
-pub mod cryptographic_primitives;
+impl fmt::Display for ProofError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "ProofError")
+    }
+}
 
-pub mod protocols;
+impl Error for ProofError {
+    fn description(&self) -> &str {
+        "Error while verifying"
+    }
+}

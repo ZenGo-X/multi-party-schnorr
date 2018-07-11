@@ -14,18 +14,28 @@
     @license GPL-3.0+ <https://github.com/KZen-networks/multi-party-ecdsa/blob/master/LICENSE>
 */
 
-pub mod elliptic;
-pub use elliptic::point::Point as Point;
+use ::BigInt;
 
-// TODO: When we will have more than one type of elliptic curve, add as features
-pub use elliptic::curves::secp256_k1::EC as EC;
-pub use elliptic::curves::secp256_k1::SK as SK;
-pub use elliptic::curves::secp256_k1::PK as PK;
+/// A simple Point defined by x and y
+#[derive(PartialEq)]
+#[derive(Debug)]
+pub struct Point  {
+    pub x: BigInt,
+    pub y: BigInt
+}
 
-pub mod arithmetic;
-// TODO: When we will have more than one type of big num library, add as features
-pub use arithmetic::big_gmp::BigInt as BigInt;
+#[cfg(test)]
+mod tests {
+    use super::Point;
+    use super::BigInt;
 
-pub mod cryptographic_primitives;
+    #[test]
+    fn equality_test() {
+        let p1 = Point { x: BigInt::one(), y: BigInt::zero() };
+        let p2 = Point { x: BigInt::one(), y: BigInt::zero()};
+        assert_eq!(p1, p2);
 
-pub mod protocols;
+        let p3 = Point { x: BigInt::zero(), y: BigInt::one() };
+        assert_ne!(p1, p3);
+    }
+}
