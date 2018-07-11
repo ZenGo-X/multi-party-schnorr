@@ -79,14 +79,15 @@ impl Party1KeyGen {
 
 impl Party1KeyAgg{
     pub fn key_aggregation(ec_context: &EC, party1_pk: &PK, party2_pk: &PK) -> Party1KeyAgg {
-
         let hash1_a1 = HSha256::create_hash(
-            vec![&BigInt::from(1), &party1_pk.to_point().x, &party1_pk.to_point().x, &party2_pk.to_point().x]);
+            vec![&BigInt::from(1), &party1_pk.bytes_compressed_to_big_int(), &party1_pk.bytes_compressed_to_big_int(),
+                 &party2_pk.bytes_compressed_to_big_int()]);
         let mut a1 = *party1_pk;
         a1.mul_assign(ec_context, &SK::from_big_int(ec_context, &hash1_a1));
 
         let hash2 = HSha256::create_hash(
-            vec![&BigInt::from(1), &party2_pk.to_point().x, &party1_pk.to_point().x, &party2_pk.to_point().x]);
+            vec![&BigInt::from(1), &party2_pk.bytes_compressed_to_big_int(), &party1_pk.bytes_compressed_to_big_int(),
+                 &party2_pk.bytes_compressed_to_big_int()]);
         let mut a2 = *party2_pk;
         a2.mul_assign(ec_context, &SK::from_big_int(ec_context, &hash2));
 
@@ -104,7 +105,21 @@ impl Party1EphemeralKey{
    pub fn create(ec_context: &EC) -> Party1EphemeralKey{
         let mut party1_ephemeral_public_key = PK::to_key(&ec_context, &EC::get_base_point());
         let party1_ephemeral_private_key = party1_ephemeral_public_key.randomize(&ec_context);
-        let (party1_Eph_key_comm, blind_factor) = HashCommitment::create_commitment(&party1_ephemeral_public_key.to_point().x);
+        let (party1_Eph_key_comm, blind_factor) = HashCommitment::create_commitment(&party1_ephemeral_public_key.bytes_compressed_to_big_int());
+        Party1EphemeralKey{
+            party1_ephemeral_public_key,
+            party1_ephemeral_private_key,
+            party1_Eph_key_comm,
+            blind_factor
+        }
+    }
+
+    pub fn create_from_private_key(ec_context: &EC, x1: &Party1KeyGen ,  message:  &[u8]) -> Party1EphemeralKey{
+        let mut party1_ephemeral_public_key = PK::to_key(&ec_context, &EC::get_base_point());
+        let hash_private_key_message = HSha256::create_hash(vec![ &x1.party1_private_key.to_big_int(), &BigInt::from(message)]);
+        let party1_ephemeral_private_key = SK::from_big_int(ec_context, &hash_private_key_message);
+        party1_ephemeral_public_key.mul_assign(ec_context,&party1_ephemeral_private_key);
+        let (party1_Eph_key_comm, blind_factor) = HashCommitment::create_commitment(&party1_ephemeral_public_key.bytes_compressed_to_big_int());
         Party1EphemeralKey{
             party1_ephemeral_public_key,
             party1_ephemeral_private_key,
@@ -114,7 +129,7 @@ impl Party1EphemeralKey{
     }
 
     pub fn test_party2_com(R2_to_test: &PK, blind_factor: &BigInt, comm: &BigInt) -> bool{
-        let computed_comm = &HashCommitment::create_commitment_with_user_defined_randomness(&R2_to_test.to_point().x,blind_factor);
+        let computed_comm = &HashCommitment::create_commitment_with_user_defined_randomness(&R2_to_test.bytes_compressed_to_big_int(),blind_factor);
         computed_comm == comm
     }
 
@@ -124,7 +139,7 @@ impl Party1EphemeralKey{
 
     pub fn hash_0(R_hat: &PK, apk: &PK, message:  &[u8] ) -> BigInt{
          HSha256::create_hash(
-            vec![&BigInt::from(0),&R_hat.to_point().x, &apk.to_point().x, &BigInt::from(message)])
+            vec![&BigInt::from(0),&R_hat.bytes_compressed_to_big_int(), &apk.bytes_compressed_to_big_int(), &BigInt::from(message)])
     }
 
     pub fn sign1(r1: &Party1EphemeralKey, c: &BigInt, x1: &Party1KeyGen, a1: &BigInt) -> BigInt{
@@ -144,7 +159,7 @@ impl Party1EphemeralKey{
 
     pub fn verify(ec_context: &EC, signature: &BigInt, R_tag: &PK, apk: &PK, message:  &[u8]) -> Result<(), ProofError>{
         let c = HSha256::create_hash(
-            vec![&BigInt::from(0),&R_tag.to_point().x, &apk.to_point().x, &BigInt::from(message)]);
+            vec![&BigInt::from(0),&R_tag.bytes_compressed_to_big_int(), &apk.bytes_compressed_to_big_int(), &BigInt::from(message)]);
         let mut sG = PK::to_key(ec_context, &EC::get_base_point());
 
         let mut cY = *apk;
