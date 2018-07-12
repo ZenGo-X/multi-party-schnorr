@@ -75,6 +75,19 @@ impl Party1KeyGen {
         }
 
     }
+
+    pub fn key_gen_from_private_key(ec_context: &EC, private_key: &BigInt) -> Party1KeyGen {
+        let party1_private_key = SK::from_big_int(ec_context,private_key);
+        let mut party1_public_key = PK::to_key(&ec_context, &EC::get_base_point());
+        party1_public_key.mul_assign(&ec_context,&party1_private_key);
+        println!("pub_key: {:?}", party1_public_key);
+        Party1KeyGen{
+            party1_public_key,
+            party1_private_key
+        }
+
+    }
+
 }
 
 impl Party1KeyAgg{
@@ -137,10 +150,11 @@ impl Party1EphemeralKey{
         R1.combine(ec_context, R2).unwrap()
     }
 
-    pub fn hash_0(R_hat: &PK, apk: &PK, message:  &[u8] ) -> BigInt{
-         HSha256::create_hash(
-            vec![&BigInt::from(0),&R_hat.bytes_compressed_to_big_int(), &apk.bytes_compressed_to_big_int(), &BigInt::from(message)])
+    pub fn hash_0(R_hat: &PK, apk: &PK, message:  &[u8], musig_bit: &bool ) -> BigInt{
+        if *musig_bit { HSha256::create_hash(vec![&BigInt::from(0), &R_hat.to_point().x, &apk.bytes_compressed_to_big_int(), &BigInt::from(message)]) }
+        else{HSha256::create_hash(vec![ &R_hat.to_point().x, &apk.bytes_compressed_to_big_int(), &BigInt::from(message)]) }
     }
+
 
     pub fn sign1(r1: &Party1EphemeralKey, c: &BigInt, x1: &Party1KeyGen, a1: &BigInt) -> BigInt{
 
@@ -153,20 +167,22 @@ impl Party1EphemeralKey{
     }
 
 
-    pub fn add_signature_parts(s1: &BigInt, s2: &BigInt, Rtag: &PK) -> (PK, BigInt){
-        (*Rtag, BigInt::mod_add(&s1, &s2,&EC::get_q()))
+    pub fn add_signature_parts(s1: &BigInt, s2: &BigInt, Rtag: &PK) -> (BigInt, BigInt){
+        (Rtag.to_point().x, BigInt::mod_add(&s1, &s2,&EC::get_q()))
     }
 
-    pub fn verify(ec_context: &EC, signature: &BigInt, R_tag: &PK, apk: &PK, message:  &[u8]) -> Result<(), ProofError>{
-        let c = HSha256::create_hash(
-            vec![&BigInt::from(0),&R_tag.bytes_compressed_to_big_int(), &apk.bytes_compressed_to_big_int(), &BigInt::from(message)]);
+    pub fn verify(ec_context: &EC, signature: &BigInt, r_x: &BigInt, apk: &PK, message:  &[u8], musig_bit: &bool) -> Result<(), ProofError>{
+        let mut c;
+        if *musig_bit{  c = HSha256::create_hash(vec![&BigInt::from(0),r_x, &apk.bytes_compressed_to_big_int(), &BigInt::from(message)]);}
+        else{   c = HSha256::create_hash(vec![r_x, &apk.bytes_compressed_to_big_int(), &BigInt::from(message)]);}
+        let minus_c = BigInt::mod_sub(&EC::get_q(),&c,&EC::get_q());
         let mut sG = PK::to_key(ec_context, &EC::get_base_point());
 
         let mut cY = *apk;
-        cY.mul_assign(ec_context,&SK::from_big_int(ec_context, &c));
+        cY.mul_assign(ec_context,&SK::from_big_int(ec_context, &minus_c));
         sG.mul_assign(ec_context, &SK::from_big_int(ec_context, signature));
 
-       if sG ==  R_tag.combine(ec_context,&cY).unwrap(){
+       if *r_x ==  sG.combine(ec_context,&cY).unwrap().to_point().x{
             Ok(())
         } else {
             Err(ProofError)
