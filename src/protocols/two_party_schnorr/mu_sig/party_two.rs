@@ -15,32 +15,28 @@
 */
 /// Simple Schnorr {2,2}-Signatures (https://eprint.iacr.org/2018/068.pdf, https://eprint.iacr.org/2018/483.pdf subsection 5.1)
 
-use ::BigInt;
+use cryptography_utils::BigInt;
 
 
 const SECURITY_BITS : usize = 256;
 
-use elliptic::curves::traits::*;
+use cryptography_utils::elliptic::curves::traits::*;
 
-use arithmetic::traits::Samplable;
+use cryptography_utils::cryptographic_primitives::proofs::ProofError;
 
-use cryptographic_primitives::proofs::dlog_zk_protocol::*;
-use cryptographic_primitives::proofs::ProofError;
-
-use cryptographic_primitives::commitments::hash_commitment::HashCommitment;
-use cryptographic_primitives::commitments::traits::Commitment;
+use cryptography_utils::cryptographic_primitives::commitments::hash_commitment::HashCommitment;
+use cryptography_utils::cryptographic_primitives::commitments::traits::Commitment;
 
 // TODO: remove the next line when unit test will be done
 
+use cryptography_utils::EC;
+use cryptography_utils::PK;
+use cryptography_utils::SK;
 
-use ::EC;
-use ::PK;
-use ::SK;
-use ::elliptic::point::{Point};
-use cryptographic_primitives::hashing::hash_sha256::HSha256;
-use cryptographic_primitives::hashing::traits::Hash;
-use cryptographic_primitives::commitments::hash_commitment;
-use arithmetic::traits::Modulo;
+use cryptography_utils::cryptographic_primitives::hashing::hash_sha256::HSha256;
+use cryptography_utils::cryptographic_primitives::hashing::traits::Hash;
+use cryptography_utils::arithmetic::traits::Modulo;
+
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct Party2KeyGen {

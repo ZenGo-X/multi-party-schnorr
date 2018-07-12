@@ -1,10 +1,10 @@
 #[cfg(test)]
 mod tests {
     extern crate hex;
-    use ::BigInt;
-    use ::EC;
-    use ::protocols::two_party_schnorr::MuSig::party_one;
-    use ::protocols::two_party_schnorr::MuSig::party_two;
+    use cryptography_utils::BigInt;
+    use cryptography_utils::EC;
+    use protocols::two_party_schnorr::mu_sig::party_one;
+    use protocols::two_party_schnorr::mu_sig::party_two;
    // use protocols::two_party_ecdsa::lindell_2017_keygen::*;
 
     #[test]

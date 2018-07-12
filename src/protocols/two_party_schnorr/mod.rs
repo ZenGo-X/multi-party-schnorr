@@ -15,4 +15,4 @@
 */
 
 // Simple Schnorr {2,2}-Signatures (https://eprint.iacr.org/2018/068.pdf, https://eprint.iacr.org/2018/483.pdf subsection 5.1)
-pub mod MuSig;
+pub mod mu_sig;
