@@ -2,7 +2,8 @@
 
 KZen Multisig Schnorr
 =====================================
-
+* Based on https://eprint.iacr.org/2018/068.pdf and the scheme for discrete-logs (section 5) from https://eprint.iacr.org/2018/483.pdf  
+* Supports Schnorr for bitcoin (https://github.com/sipa/bips/blob/bip-schnorr/bip-schnorr.mediawiki)
 License
 -------
 Multisig Schnorr is released under the terms of the GPL-3.0 license. See [LICENSE](LICENSE) for more information.
