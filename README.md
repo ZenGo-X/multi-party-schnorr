@@ -8,10 +8,11 @@ KZen Multisig Schnorr
 
 Disclaimer: (1) This code should not be used for production at the moment. (2) This code is not secure against side-channel attacks
 
+A wiki is available here: https://github.com/KZen-networks/multisig-schnorr/wiki.
+
 License
 -------
 Multisig Schnorr is released under the terms of the GPL-3.0 license. See [LICENSE](LICENSE) for more information.
-
 
 Development Process
 -------------------
