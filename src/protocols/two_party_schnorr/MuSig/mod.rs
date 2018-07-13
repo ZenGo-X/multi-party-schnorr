@@ -67,7 +67,6 @@ pub struct KeyAgg {
 
 impl KeyAgg {
     pub fn key_aggregation(ec_context: &EC, my_pk: &PK, other_pk: &PK) -> KeyAgg {
-
         let hash = HSha256::create_hash(
             vec![&BigInt::from(1), &my_pk.to_point().x, &my_pk.to_point().x, &other_pk.to_point().x]);
         let mut a1 = *my_pk;
@@ -77,12 +76,40 @@ impl KeyAgg {
             vec![&BigInt::from(1), &other_pk.to_point().x, &my_pk.to_point().x, &other_pk.to_point().x]);
         let mut a2 = *other_pk;
         a2.mul_assign(ec_context, &SK::from_big_int(ec_context, &hash2));
-
         let apk = a2.combine(ec_context, &a1).unwrap();
         KeyAgg {
             apk,
             hash
         }
+    }
+
+    pub fn key_aggregation_n(ec_context: &EC, pks: &Vec<PK>, party_index: &usize) -> KeyAgg {
+
+        let bn_1 = BigInt::from(1);
+        let mut x_coor_vec: Vec<BigInt> = (0..pks.len()).into_iter().map(|i| pks[i].to_point().x).collect();
+        let hash_vec: Vec<BigInt> = x_coor_vec.iter().map(|pk|{
+            let mut vec = Vec::new();
+            vec.push(&bn_1);
+            vec.push( pk);
+            for i in 0..pks.len(){vec.push(&x_coor_vec[i]);}
+            HSha256::create_hash(vec)
+        }).collect();
+
+        let apk_vec: Vec<PK> = pks.iter().zip(&hash_vec).map(|(pk, hash)|{
+            let mut a_i = pk.clone();
+            a_i.mul_assign(ec_context, &SK::from_big_int(ec_context, &hash));
+            a_i
+        }).collect();
+
+        let mut apk_vec_2_n = apk_vec.clone();
+        let mut pk1 = apk_vec_2_n.remove(0);
+        let sum = apk_vec_2_n.iter().fold(pk1, |acc,pk|  acc.combine(&ec_context,pk).unwrap());
+
+        KeyAgg {
+            apk: sum,
+            hash: hash_vec[*party_index].clone()
+        }
+
     }
 }
 
