@@ -4,5 +4,6 @@ rust:
     - nightly
 
 script:
+    - cargo fmt -- --write-mode=check
     - cargo build --verbose
     - cargo test --verbose
