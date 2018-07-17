@@ -16,12 +16,12 @@
 
 #[cfg(test)]
 mod tests {
-    use cryptography_utils::{ EC, PK };
-    use ::protocols::two_party_schnorr::mu_sig::{ KeyPair, KeyAgg, EphemeralKey };
-    use ::protocols::two_party_schnorr::mu_sig::party_two;
+    use cryptography_utils::{EC, PK};
+    use protocols::two_party_schnorr::mu_sig::party_two;
+    use protocols::two_party_schnorr::mu_sig::{EphemeralKey, KeyAgg, KeyPair};
 
     #[test]
-    fn test_two_party_signing(){
+    fn test_two_party_signing() {
         let ec_context = EC::new();
         let message: [u8; 4] = [79, 77, 69, 82];
 
@@ -40,22 +40,23 @@ mod tests {
         assert!(EphemeralKey::test_com(
             &party2_ephemeral_key.keypair.public_key,
             &party2_ephemeral_key.blind_factor,
-            party2_commitment));
+            party2_commitment
+        ));
         // p2 release R2' and p1 test com(R2') = com(R2):
         assert!(EphemeralKey::test_com(
             &party1_ephemeral_key.keypair.public_key,
             &party1_ephemeral_key.blind_factor,
-            party1_commitment));
+            party1_commitment
+        ));
 
         // compute apk:
-        let party1_key_agg = KeyAgg::key_aggregation(
-            &ec_context,
-            &party1_key.public_key,
-            &party2_key.public_key);
+        let party1_key_agg =
+            KeyAgg::key_aggregation(&ec_context, &party1_key.public_key, &party2_key.public_key);
         let party2_key_agg = party_two::Party2KeyAgg::key_aggregation(
             &ec_context,
             &party1_key.public_key,
-            &party2_key.public_key);
+            &party2_key.public_key,
+        );
 
         assert_eq!(party1_key_agg.apk, party2_key_agg.apk);
 
@@ -63,12 +64,14 @@ mod tests {
         let party1_r_tag = EphemeralKey::add_ephemeral_pub_keys(
             &ec_context,
             &party1_ephemeral_key.keypair.public_key,
-            &party2_ephemeral_key.keypair.public_key);
+            &party2_ephemeral_key.keypair.public_key,
+        );
 
         let party2_r_tag = EphemeralKey::add_ephemeral_pub_keys(
             &ec_context,
             &party1_ephemeral_key.keypair.public_key,
-            &party2_ephemeral_key.keypair.public_key);
+            &party2_ephemeral_key.keypair.public_key,
+        );
 
         assert_eq!(party1_r_tag, party2_r_tag);
 
@@ -78,19 +81,28 @@ mod tests {
         assert_eq!(party1_h_0, party2_h_0);
 
         // compute partial signature s_i and send to the other party:
-        let s1 = EphemeralKey::sign(&party1_ephemeral_key, &party1_h_0, &party1_key, &party1_key_agg.hash);
-        let s2 = EphemeralKey::sign(&party2_ephemeral_key, &party2_h_0, &party2_key, &party2_key_agg.hash);
+        let s1 = EphemeralKey::sign(
+            &party1_ephemeral_key,
+            &party1_h_0,
+            &party1_key,
+            &party1_key_agg.hash,
+        );
+        let s2 = EphemeralKey::sign(
+            &party2_ephemeral_key,
+            &party2_h_0,
+            &party2_key,
+            &party2_key_agg.hash,
+        );
 
         // signature s:
         let (r, s) = EphemeralKey::add_signature_parts(&s1, &s2, &party1_r_tag);
 
         // verify:
         assert!(EphemeralKey::verify(&ec_context, &s, &r, &party1_key_agg.apk, &message).is_ok())
-
     }
 
     #[test]
-    fn test_multiparty_signing_for_two_parties(){
+    fn test_multiparty_signing_for_two_parties() {
         let ec_context = EC::new();
         let message: [u8; 4] = [79, 77, 69, 82];
 
@@ -109,32 +121,35 @@ mod tests {
         assert!(EphemeralKey::test_com(
             &party2_ephemeral_key.keypair.public_key,
             &party2_ephemeral_key.blind_factor,
-            party2_commitment));
+            party2_commitment
+        ));
         // p2 release R2' and p1 test com(R2') = com(R2):
         assert!(EphemeralKey::test_com(
             &party1_ephemeral_key.keypair.public_key,
             &party1_ephemeral_key.blind_factor,
-            party1_commitment));
+            party1_commitment
+        ));
 
         // compute apk:
-        let mut pks : Vec<PK> = Vec::new();
+        let mut pks: Vec<PK> = Vec::new();
         pks.push(party1_key.public_key.clone());
         pks.push(party2_key.public_key.clone());
-        let party1_key_agg = KeyAgg::key_aggregation_n(&ec_context,&pks,&0);
-        let party2_key_agg = KeyAgg::key_aggregation_n(&ec_context,&pks,&1);
+        let party1_key_agg = KeyAgg::key_aggregation_n(&ec_context, &pks, &0);
+        let party2_key_agg = KeyAgg::key_aggregation_n(&ec_context, &pks, &1);
         assert_eq!(party1_key_agg.apk, party2_key_agg.apk);
-
 
         // compute R' = R1+R2:
         let party1_r_tag = EphemeralKey::add_ephemeral_pub_keys(
             &ec_context,
             &party1_ephemeral_key.keypair.public_key,
-            &party2_ephemeral_key.keypair.public_key);
+            &party2_ephemeral_key.keypair.public_key,
+        );
 
         let party2_r_tag = EphemeralKey::add_ephemeral_pub_keys(
             &ec_context,
             &party1_ephemeral_key.keypair.public_key,
-            &party2_ephemeral_key.keypair.public_key);
+            &party2_ephemeral_key.keypair.public_key,
+        );
 
         assert_eq!(party1_r_tag, party2_r_tag);
 
@@ -144,8 +159,18 @@ mod tests {
         assert_eq!(party1_h_0, party2_h_0);
 
         // compute partial signature s_i and send to the other party:
-        let s1 = EphemeralKey::sign(&party1_ephemeral_key, &party1_h_0, &party1_key, &party1_key_agg.hash);
-        let s2 = EphemeralKey::sign(&party2_ephemeral_key, &party2_h_0, &party2_key, &party2_key_agg.hash);
+        let s1 = EphemeralKey::sign(
+            &party1_ephemeral_key,
+            &party1_h_0,
+            &party1_key,
+            &party1_key_agg.hash,
+        );
+        let s2 = EphemeralKey::sign(
+            &party2_ephemeral_key,
+            &party2_h_0,
+            &party2_key,
+            &party2_key_agg.hash,
+        );
 
         // signature s:
         let (r, s) = EphemeralKey::add_signature_parts(&s1, &s2, &party1_r_tag);
