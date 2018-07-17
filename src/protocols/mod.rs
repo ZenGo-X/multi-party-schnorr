@@ -13,5 +13,5 @@
 
     @license GPL-3.0+ <https://github.com/KZen-networks/multisig-schnorr/blob/master/LICENSE>
 */
-
-pub mod two_party_schnorr;
+// Simple Schnorr {2,2}-Signatures (https://eprint.iacr.org/2018/068.pdf, https://eprint.iacr.org/2018/483.pdf subsection 5.1)
+pub mod multi_sig;

@@ -45,6 +45,16 @@ impl KeyPair {
             private_key,
         }
     }
+
+    pub fn create_from_private_key(ec_context: &EC, private_key: &BigInt) -> KeyPair {
+        let private_key = SK::from_big_int(ec_context, private_key);
+        let mut public_key = PK::to_key(&ec_context, &EC::get_base_point());
+        public_key.mul_assign(&ec_context, &private_key);
+        KeyPair {
+            public_key,
+            private_key,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -146,6 +156,24 @@ impl EphemeralKey {
         }
     }
 
+    pub fn create_from_private_key(ec_context: &EC, x1: &KeyPair, message: &[u8]) -> EphemeralKey {
+        let mut ephemeral_public_key = PK::to_key(&ec_context, &EC::get_base_point());
+        let hash_private_key_message =
+            HSha256::create_hash(vec![&x1.private_key.to_big_int(), &BigInt::from(message)]);
+        let ephemeral_private_key = SK::from_big_int(ec_context, &hash_private_key_message);
+        ephemeral_public_key.mul_assign(ec_context, &ephemeral_private_key);
+        let (commitment, blind_factor) =
+            HashCommitment::create_commitment(&ephemeral_public_key.bytes_compressed_to_big_int());
+        EphemeralKey {
+            keypair: KeyPair {
+                public_key: ephemeral_public_key,
+                private_key: ephemeral_private_key,
+            },
+            commitment,
+            blind_factor,
+        }
+    }
+
     pub fn test_com(r_to_test: &PK, blind_factor: &BigInt, comm: &BigInt) -> bool {
         let computed_comm = &HashCommitment::create_commitment_with_user_defined_randomness(
             &r_to_test.to_point().x,
@@ -158,49 +186,25 @@ impl EphemeralKey {
         r1.combine(ec_context, r2).unwrap()
     }
 
-    pub fn hash_0(r_hat: &PK, apk: &PK, message: &[u8]) -> BigInt {
-        HSha256::create_hash(vec![
-            &BigInt::from(0),
-            &r_hat.to_point().x,
-            &apk.to_point().x,
-            &BigInt::from(message),
-        ])
-    }
-
-    pub fn add_signature_parts(s1: &BigInt, s2: &BigInt, r_tag: &PK) -> (PK, BigInt) {
-        (*r_tag, BigInt::mod_add(&s1, &s2, &EC::get_q()))
-    }
-
-    pub fn verify(
-        ec_context: &EC,
-        signature: &BigInt,
-        r_tag: &PK,
-        apk: &PK,
-        message: &[u8],
-    ) -> Result<(), ProofError> {
-        let c = HSha256::create_hash(vec![
-            &BigInt::from(0),
-            &r_tag.to_point().x,
-            &apk.to_point().x,
-            &BigInt::from(message),
-        ]);
-        let mut s_g = PK::to_key(ec_context, &EC::get_base_point());
-
-        let mut c_y = *apk;
-        assert!(
-            c_y.mul_assign(ec_context, &SK::from_big_int(ec_context, &c))
-                .is_ok()
-        );
-        assert!(
-            s_g.mul_assign(ec_context, &SK::from_big_int(ec_context, signature))
-                .is_ok()
-        );
-
-        if s_g == r_tag.combine(ec_context, &c_y).unwrap() {
-            Ok(())
+    pub fn hash_0(r_hat: &PK, apk: &PK, message: &[u8], musig_bit: &bool) -> BigInt {
+        if *musig_bit {
+            HSha256::create_hash(vec![
+                &BigInt::from(0),
+                &r_hat.to_point().x,
+                &apk.bytes_compressed_to_big_int(),
+                &BigInt::from(message),
+            ])
         } else {
-            Err(ProofError)
+            HSha256::create_hash(vec![
+                &r_hat.to_point().x,
+                &apk.bytes_compressed_to_big_int(),
+                &BigInt::from(message),
+            ])
         }
+    }
+
+    pub fn add_signature_parts(s1: &BigInt, s2: &BigInt, r_tag: &PK) -> (BigInt, BigInt) {
+        (r_tag.to_point().x, BigInt::mod_add(&s1, &s2, &EC::get_q()))
     }
 
     pub fn sign(r: &EphemeralKey, c: &BigInt, x: &KeyPair, a: &BigInt) -> BigInt {
@@ -216,49 +220,41 @@ impl EphemeralKey {
     }
 }
 
-pub mod party_two {
-
-    use super::*;
-
-    #[allow(dead_code)]
-    #[derive(Debug)]
-    pub struct Party2KeyAgg {
-        pub apk: PK,
-        pub hash: BigInt,
+pub fn verify(
+    ec_context: &EC,
+    signature: &BigInt,
+    r_x: &BigInt,
+    apk: &PK,
+    message: &[u8],
+    musig_bit: &bool,
+) -> Result<(), ProofError> {
+    let mut c;
+    if *musig_bit {
+        c = HSha256::create_hash(vec![
+            &BigInt::from(0),
+            &r_x,
+            &apk.bytes_compressed_to_big_int(),
+            &BigInt::from(message),
+        ]);
+    } else {
+        c = HSha256::create_hash(vec![
+            r_x,
+            &apk.bytes_compressed_to_big_int(),
+            &BigInt::from(message),
+        ]);
     }
+    let minus_c = BigInt::mod_sub(&EC::get_q(), &c, &EC::get_q());
+    let mut sG = PK::to_key(ec_context, &EC::get_base_point());
 
-    impl Party2KeyAgg {
-        pub fn key_aggregation(ec_context: &EC, my_pk: &PK, other_pk: &PK) -> Party2KeyAgg {
-            let hash = HSha256::create_hash(vec![
-                &BigInt::from(1),
-                &other_pk.to_point().x,
-                &my_pk.to_point().x,
-                &other_pk.to_point().x,
-            ]);
-            let mut a1 = *other_pk;
-            assert!(
-                a1.mul_assign(ec_context, &SK::from_big_int(ec_context, &hash))
-                    .is_ok()
-            );
+    let mut cY = *apk;
+    cY.mul_assign(ec_context, &SK::from_big_int(ec_context, &minus_c));
+    sG.mul_assign(ec_context, &SK::from_big_int(ec_context, signature));
 
-            let hash2 = HSha256::create_hash(vec![
-                &BigInt::from(1),
-                &my_pk.to_point().x,
-                &my_pk.to_point().x,
-                &other_pk.to_point().x,
-            ]);
-            let mut a2 = *my_pk;
-            assert!(
-                a2.mul_assign(ec_context, &SK::from_big_int(ec_context, &hash2))
-                    .is_ok()
-            );
-
-            let apk = a2.combine(ec_context, &a1).unwrap();
-
-            Party2KeyAgg { apk, hash }
-        }
+    if *r_x == sG.combine(ec_context, &cY).unwrap().to_point().x {
+        Ok(())
+    } else {
+        Err(ProofError)
     }
-
 }
 
 mod test;
