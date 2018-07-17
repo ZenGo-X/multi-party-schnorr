@@ -1,8 +1,23 @@
+/*
+    Multisig Schnorr
+
+    Copyright 2018 by Kzen Networks
+
+    This file is part of Multisig Schnorr library
+    (https://github.com/KZen-networks/multisig-schnorr)
+
+    Multisig Schnorr is free software: you can redistribute
+    it and/or modify it under the terms of the GNU General Public
+    License as published by the Free Software Foundation, either
+    version 3 of the License, or (at your option) any later version.
+
+    @license GPL-3.0+ <https://github.com/KZen-networks/multisig-schnorr/blob/master/LICENSE>
+*/
+
 #[cfg(test)]
 mod tests {
-    use cryptography_utils::EC;
-    use cryptography_utils::PK;
-    use ::protocols::two_party_schnorr::mu_sig::{KeyPair, KeyAgg, EphemeralKey};
+    use cryptography_utils::{ EC, PK };
+    use ::protocols::two_party_schnorr::mu_sig::{ KeyPair, KeyAgg, EphemeralKey };
     use ::protocols::two_party_schnorr::mu_sig::party_two;
 
     #[test]
@@ -137,8 +152,5 @@ mod tests {
 
         // verify:
         assert!(EphemeralKey::verify(&ec_context, &s, &r, &party1_key_agg.apk, &message).is_ok())
-
     }
-
-
 }
