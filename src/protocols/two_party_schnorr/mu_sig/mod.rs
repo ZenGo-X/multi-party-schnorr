@@ -20,13 +20,8 @@
 
 use cryptography_utils::BigInt;
 
-const SECURITY_BITS : usize = 256;
-
 use cryptography_utils::elliptic::curves::traits::*;
 
-use cryptography_utils::arithmetic::traits::Samplable;
-
-use cryptography_utils::cryptographic_primitives::proofs::dlog_zk_protocol::*;
 use cryptography_utils::cryptographic_primitives::proofs::ProofError;
 
 use cryptography_utils::cryptographic_primitives::commitments::hash_commitment::HashCommitment;
@@ -37,10 +32,8 @@ use cryptography_utils::cryptographic_primitives::commitments::traits::Commitmen
 use cryptography_utils::EC;
 use cryptography_utils::PK;
 use cryptography_utils::SK;
-use cryptography_utils::elliptic::point::{Point};
 use cryptography_utils::cryptographic_primitives::hashing::hash_sha256::HSha256;
 use cryptography_utils::cryptographic_primitives::hashing::traits::Hash;
-use cryptography_utils::cryptographic_primitives::commitments::hash_commitment;
 use cryptography_utils::arithmetic::traits::Modulo;
 
 
@@ -72,12 +65,12 @@ impl KeyAgg {
         let hash = HSha256::create_hash(
             vec![&BigInt::from(1), &my_pk.to_point().x, &my_pk.to_point().x, &other_pk.to_point().x]);
         let mut a1 = *my_pk;
-        a1.mul_assign(ec_context, &SK::from_big_int(ec_context, &hash));
+        assert!(a1.mul_assign(ec_context, &SK::from_big_int(ec_context, &hash)).is_ok());
 
         let hash2 = HSha256::create_hash(
             vec![&BigInt::from(1), &other_pk.to_point().x, &my_pk.to_point().x, &other_pk.to_point().x]);
         let mut a2 = *other_pk;
-        a2.mul_assign(ec_context, &SK::from_big_int(ec_context, &hash2));
+        assert!(a2.mul_assign(ec_context, &SK::from_big_int(ec_context, &hash2)).is_ok());
         let apk = a2.combine(ec_context, &a1).unwrap();
         KeyAgg {
             apk,
@@ -88,7 +81,7 @@ impl KeyAgg {
     pub fn key_aggregation_n(ec_context: &EC, pks: &Vec<PK>, party_index: &usize) -> KeyAgg {
 
         let bn_1 = BigInt::from(1);
-        let mut x_coor_vec: Vec<BigInt> = (0..pks.len()).into_iter().map(|i| pks[i].to_point().x).collect();
+        let x_coor_vec: Vec<BigInt> = (0..pks.len()).into_iter().map(|i| pks[i].to_point().x).collect();
         let hash_vec: Vec<BigInt> = x_coor_vec.iter().map(|pk|{
             let mut vec = Vec::new();
             vec.push(&bn_1);
@@ -97,14 +90,14 @@ impl KeyAgg {
             HSha256::create_hash(vec)
         }).collect();
 
-        let apk_vec: Vec<PK> = pks.iter().zip(&hash_vec).map(|(pk, hash)|{
+        let apk_vec: Vec<PK> = pks.iter().zip(&hash_vec).map(|(pk, hash)| {
             let mut a_i = pk.clone();
-            a_i.mul_assign(ec_context, &SK::from_big_int(ec_context, &hash));
+            assert!(a_i.mul_assign(ec_context, &SK::from_big_int(ec_context, &hash)).is_ok());
             a_i
         }).collect();
 
         let mut apk_vec_2_n = apk_vec.clone();
-        let mut pk1 = apk_vec_2_n.remove(0);
+        let pk1 = apk_vec_2_n.remove(0);
         let sum = apk_vec_2_n.iter().fold(pk1, |acc,pk|  acc.combine(&ec_context,pk).unwrap());
 
         KeyAgg {
@@ -139,29 +132,29 @@ impl EphemeralKey {
         computed_comm == comm
     }
 
-    pub fn add_ephemeral_pub_keys(ec_context: &EC, R1: &PK, R2: &PK) -> PK {
-        R1.combine(ec_context, R2).unwrap()
+    pub fn add_ephemeral_pub_keys(ec_context: &EC, r1: &PK, r2: &PK) -> PK {
+        r1.combine(ec_context, r2).unwrap()
     }
 
-    pub fn hash_0(R_hat: &PK, apk: &PK, message: &[u8]) -> BigInt{
+    pub fn hash_0(r_hat: &PK, apk: &PK, message: &[u8]) -> BigInt{
         HSha256::create_hash(
-            vec![&BigInt::from(0),&R_hat.to_point().x, &apk.to_point().x, &BigInt::from(message)])
+            vec![&BigInt::from(0),&r_hat.to_point().x, &apk.to_point().x, &BigInt::from(message)])
     }
 
-    pub fn add_signature_parts(s1: &BigInt, s2: &BigInt, Rtag: &PK) -> (PK, BigInt){
-        (*Rtag, BigInt::mod_add(&s1, &s2,&EC::get_q()))
+    pub fn add_signature_parts(s1: &BigInt, s2: &BigInt, r_tag: &PK) -> (PK, BigInt){
+        (*r_tag, BigInt::mod_add(&s1, &s2,&EC::get_q()))
     }
 
-    pub fn verify(ec_context: &EC, signature: &BigInt, R_tag: &PK, apk: &PK, message:  &[u8]) -> Result<(), ProofError>{
+    pub fn verify(ec_context: &EC, signature: &BigInt, r_tag: &PK, apk: &PK, message:  &[u8]) -> Result<(), ProofError>{
         let c = HSha256::create_hash(
-            vec![&BigInt::from(0),&R_tag.to_point().x, &apk.to_point().x, &BigInt::from(message)]);
-        let mut sG = PK::to_key(ec_context, &EC::get_base_point());
+            vec![&BigInt::from(0),&r_tag.to_point().x, &apk.to_point().x, &BigInt::from(message)]);
+        let mut s_g = PK::to_key(ec_context, &EC::get_base_point());
 
-        let mut cY = *apk;
-        cY.mul_assign(ec_context,&SK::from_big_int(ec_context, &c));
-        sG.mul_assign(ec_context, &SK::from_big_int(ec_context, signature));
+        let mut c_y = *apk;
+        assert!(c_y.mul_assign(ec_context,&SK::from_big_int(ec_context, &c)).is_ok());
+        assert!(s_g.mul_assign(ec_context, &SK::from_big_int(ec_context, signature)).is_ok());
 
-        if sG == R_tag.combine(ec_context,&cY).unwrap() {
+        if s_g == r_tag.combine(ec_context,&c_y).unwrap() {
             Ok(())
         } else {
             Err(ProofError)
@@ -196,12 +189,12 @@ pub mod party_two {
             let hash = HSha256::create_hash(
                 vec![&BigInt::from(1), &other_pk.to_point().x, &my_pk.to_point().x, &other_pk.to_point().x]);
             let mut a1 = *other_pk;
-            a1.mul_assign(ec_context, &SK::from_big_int(ec_context, &hash));
+            assert!(a1.mul_assign(ec_context, &SK::from_big_int(ec_context, &hash)).is_ok());
 
             let hash2 = HSha256::create_hash(
                 vec![&BigInt::from(1), &my_pk.to_point().x, &my_pk.to_point().x, &other_pk.to_point().x]);
             let mut a2 = *my_pk;
-            a2.mul_assign(ec_context, &SK::from_big_int(ec_context, &hash2));
+            assert!(a2.mul_assign(ec_context, &SK::from_big_int(ec_context, &hash2)).is_ok());
 
             let apk = a2.combine(ec_context, &a1).unwrap();
             

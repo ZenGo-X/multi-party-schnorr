@@ -6,7 +6,6 @@ mod tests {
     use ::protocols::two_party_schnorr::mu_sig::party_two;
 
     #[test]
-
     fn test_two_party_signing(){
         let ec_context = EC::new();
         let message: [u8; 4] = [79, 77, 69, 82];
@@ -46,32 +45,32 @@ mod tests {
         assert_eq!(party1_key_agg.apk, party2_key_agg.apk);
 
         // compute R' = R1+R2:
-        let party1_Rtag = EphemeralKey::add_ephemeral_pub_keys(
+        let party1_r_tag = EphemeralKey::add_ephemeral_pub_keys(
             &ec_context,
             &party1_ephemeral_key.keypair.public_key,
             &party2_ephemeral_key.keypair.public_key);
 
-        let party2_Rtag = EphemeralKey::add_ephemeral_pub_keys(
+        let party2_r_tag = EphemeralKey::add_ephemeral_pub_keys(
             &ec_context,
             &party1_ephemeral_key.keypair.public_key,
             &party2_ephemeral_key.keypair.public_key);
 
-        assert_eq!(party1_Rtag, party2_Rtag);
+        assert_eq!(party1_r_tag, party2_r_tag);
 
         // compute c = H0(Rtag || apk || message)
-        let party1_H0 = EphemeralKey::hash_0(&party1_Rtag, &party1_key_agg.apk, &message);
-        let party2_H0 = EphemeralKey::hash_0(&party2_Rtag, &party2_key_agg.apk, &message);
-        assert_eq!(party1_H0, party2_H0);
+        let party1_h_0 = EphemeralKey::hash_0(&party1_r_tag, &party1_key_agg.apk, &message);
+        let party2_h_0 = EphemeralKey::hash_0(&party2_r_tag, &party2_key_agg.apk, &message);
+        assert_eq!(party1_h_0, party2_h_0);
 
         // compute partial signature s_i and send to the other party:
-        let s1 = EphemeralKey::sign(&party1_ephemeral_key, &party1_H0, &party1_key, &party1_key_agg.hash);
-        let s2 = EphemeralKey::sign(&party2_ephemeral_key, &party2_H0, &party2_key, &party2_key_agg.hash);
+        let s1 = EphemeralKey::sign(&party1_ephemeral_key, &party1_h_0, &party1_key, &party1_key_agg.hash);
+        let s2 = EphemeralKey::sign(&party2_ephemeral_key, &party2_h_0, &party2_key, &party2_key_agg.hash);
 
         // signature s:
-        let (R, s) = EphemeralKey::add_signature_parts(&s1, &s2, &party1_Rtag);
+        let (r, s) = EphemeralKey::add_signature_parts(&s1, &s2, &party1_r_tag);
 
         // verify:
-        assert!(EphemeralKey::verify(&ec_context, &s, &R, &party1_key_agg.apk, &message).is_ok())
+        assert!(EphemeralKey::verify(&ec_context, &s, &r, &party1_key_agg.apk, &message).is_ok())
 
     }
 
@@ -112,32 +111,32 @@ mod tests {
 
 
         // compute R' = R1+R2:
-        let party1_Rtag = EphemeralKey::add_ephemeral_pub_keys(
+        let party1_r_tag = EphemeralKey::add_ephemeral_pub_keys(
             &ec_context,
             &party1_ephemeral_key.keypair.public_key,
             &party2_ephemeral_key.keypair.public_key);
 
-        let party2_Rtag = EphemeralKey::add_ephemeral_pub_keys(
+        let party2_r_tag = EphemeralKey::add_ephemeral_pub_keys(
             &ec_context,
             &party1_ephemeral_key.keypair.public_key,
             &party2_ephemeral_key.keypair.public_key);
 
-        assert_eq!(party1_Rtag, party2_Rtag);
+        assert_eq!(party1_r_tag, party2_r_tag);
 
         // compute c = H0(Rtag || apk || message)
-        let party1_H0 = EphemeralKey::hash_0(&party1_Rtag, &party1_key_agg.apk, &message);
-        let party2_H0 = EphemeralKey::hash_0(&party2_Rtag, &party2_key_agg.apk, &message);
-        assert_eq!(party1_H0, party2_H0);
+        let party1_h_0 = EphemeralKey::hash_0(&party1_r_tag, &party1_key_agg.apk, &message);
+        let party2_h_0 = EphemeralKey::hash_0(&party2_r_tag, &party2_key_agg.apk, &message);
+        assert_eq!(party1_h_0, party2_h_0);
 
         // compute partial signature s_i and send to the other party:
-        let s1 = EphemeralKey::sign(&party1_ephemeral_key, &party1_H0, &party1_key, &party1_key_agg.hash);
-        let s2 = EphemeralKey::sign(&party2_ephemeral_key, &party2_H0, &party2_key, &party2_key_agg.hash);
+        let s1 = EphemeralKey::sign(&party1_ephemeral_key, &party1_h_0, &party1_key, &party1_key_agg.hash);
+        let s2 = EphemeralKey::sign(&party2_ephemeral_key, &party2_h_0, &party2_key, &party2_key_agg.hash);
 
         // signature s:
-        let (R, s) = EphemeralKey::add_signature_parts(&s1, &s2, &party1_Rtag);
+        let (r, s) = EphemeralKey::add_signature_parts(&s1, &s2, &party1_r_tag);
 
         // verify:
-        assert!(EphemeralKey::verify(&ec_context, &s, &R, &party1_key_agg.apk, &message).is_ok())
+        assert!(EphemeralKey::verify(&ec_context, &s, &r, &party1_key_agg.apk, &message).is_ok())
 
     }
 
