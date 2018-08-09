@@ -17,23 +17,22 @@
 #[cfg(test)]
 mod tests {
     use cryptography_utils::BigInt;
-    use cryptography_utils::{EC, PK};
+    use cryptography_utils::{SK, PK, GE, FE};
     use protocols::multi_sig::{verify, EphemeralKey, KeyAgg, KeyPair};
     extern crate hex;
 
     #[test]
     fn test_multiparty_signing_for_two_parties() {
         let is_musig = true;
-        let ec_context = EC::new();
         let message: [u8; 4] = [79, 77, 69, 82];
 
         // round 0: generate signing keys
-        let party1_key = KeyPair::create(&ec_context);
-        let party2_key = KeyPair::create(&ec_context);
+        let party1_key = KeyPair::create();
+        let party2_key = KeyPair::create();
 
         // round 1: send commitments to ephemeral public keys
-        let party1_ephemeral_key = EphemeralKey::create(&ec_context);
-        let party2_ephemeral_key = EphemeralKey::create(&ec_context);
+        let party1_ephemeral_key = EphemeralKey::create();
+        let party2_ephemeral_key = EphemeralKey::create();
         let party1_commitment = &party1_ephemeral_key.commitment;
         let party2_commitment = &party2_ephemeral_key.commitment;
 
@@ -52,22 +51,20 @@ mod tests {
         ));
 
         // compute apk:
-        let mut pks: Vec<PK> = Vec::new();
+        let mut pks: Vec<GE> = Vec::new();
         pks.push(party1_key.public_key.clone());
         pks.push(party2_key.public_key.clone());
-        let party1_key_agg = KeyAgg::key_aggregation_n(&ec_context, &pks, &0);
-        let party2_key_agg = KeyAgg::key_aggregation_n(&ec_context, &pks, &1);
+        let party1_key_agg = KeyAgg::key_aggregation_n(&pks, &0);
+        let party2_key_agg = KeyAgg::key_aggregation_n(&pks, &1);
         assert_eq!(party1_key_agg.apk, party2_key_agg.apk);
 
         // compute R' = R1+R2:
         let party1_r_tag = EphemeralKey::add_ephemeral_pub_keys(
-            &ec_context,
             &party1_ephemeral_key.keypair.public_key,
             &party2_ephemeral_key.keypair.public_key,
         );
 
         let party2_r_tag = EphemeralKey::add_ephemeral_pub_keys(
-            &ec_context,
             &party1_ephemeral_key.keypair.public_key,
             &party2_ephemeral_key.keypair.public_key,
         );
@@ -101,7 +98,6 @@ mod tests {
         // verify:
         assert!(
             verify(
-                &ec_context,
                 &s,
                 &r,
                 &party1_key_agg.apk,
@@ -114,11 +110,10 @@ mod tests {
     #[test]
     fn test_schnorr_one_party() {
         let is_musig = false;
-        let ec_context = EC::new();
         let message: [u8; 4] = [79, 77, 69, 82];
-        let party1_key = KeyPair::create(&ec_context);
+        let party1_key = KeyPair::create();
         let party1_ephemeral_key =
-            EphemeralKey::create_from_private_key(&ec_context, &party1_key, &message);
+            EphemeralKey::create_from_private_key(&party1_key, &message);
 
         // compute c = H0(Rtag || apk || message)
         let party1_h_0 = EphemeralKey::hash_0(
@@ -145,7 +140,6 @@ mod tests {
         // verify:
         assert!(
             verify(
-                &ec_context,
                 &s,
                 &R,
                 &party1_key.public_key,
@@ -155,23 +149,21 @@ mod tests {
         )
     }
 
+
     #[test]
 
     fn test_schnorr_bip_test_vector_2() {
-        let ec_context = EC::new();
         let private_key_raw = "B7E151628AED2A6ABF7158809CF4F3C762E7160F38B4DA56A784D9045190CFEF";
         //let public_key_raw =  "03FAC2114C2FBB091527EB7C64ECB11F8021CB45E8E7809D3C0938E4B8C0E5F84B";
         let message_raw = "243F6A8885A308D313198A2E03707344A4093822299F31D0082EFA98EC4E6C89";
 
         let is_musig = false;
-        let ec_context = EC::new();
         let message = hex::decode(message_raw).unwrap();
         let party1_key = KeyPair::create_from_private_key(
-            &ec_context,
             &BigInt::from_str_radix(&private_key_raw, 16).unwrap(),
         );
         let party1_ephemeral_key =
-            EphemeralKey::create_from_private_key(&ec_context, &party1_key, &message);
+            EphemeralKey::create_from_private_key(&party1_key, &message);
 
         // compute c = H0(Rtag || apk || message)
         let party1_h_0 = EphemeralKey::hash_0(
@@ -207,7 +199,6 @@ mod tests {
         // verify:
         assert!(
             verify(
-                &ec_context,
                 &s,
                 &R,
                 &party1_key.public_key,
