@@ -17,7 +17,7 @@
 #[cfg(test)]
 mod tests {
     use cryptography_utils::BigInt;
-    use cryptography_utils::{SK, PK, GE, FE};
+    use cryptography_utils::{FE, GE, PK, SK};
     use protocols::multi_sig::{verify, EphemeralKey, KeyAgg, KeyPair};
     extern crate hex;
 
@@ -96,15 +96,7 @@ mod tests {
         let (r, s) = EphemeralKey::add_signature_parts(&s1, &s2, &party1_r_tag);
 
         // verify:
-        assert!(
-            verify(
-                &s,
-                &r,
-                &party1_key_agg.apk,
-                &message,
-                &is_musig,
-            ).is_ok()
-        )
+        assert!(verify(&s, &r, &party1_key_agg.apk, &message, &is_musig,).is_ok())
     }
 
     #[test]
@@ -112,8 +104,7 @@ mod tests {
         let is_musig = false;
         let message: [u8; 4] = [79, 77, 69, 82];
         let party1_key = KeyPair::create();
-        let party1_ephemeral_key =
-            EphemeralKey::create_from_private_key(&party1_key, &message);
+        let party1_ephemeral_key = EphemeralKey::create_from_private_key(&party1_key, &message);
 
         // compute c = H0(Rtag || apk || message)
         let party1_h_0 = EphemeralKey::hash_0(
@@ -138,17 +129,8 @@ mod tests {
         );
 
         // verify:
-        assert!(
-            verify(
-                &s,
-                &R,
-                &party1_key.public_key,
-                &message,
-                &is_musig
-            ).is_ok()
-        )
+        assert!(verify(&s, &R, &party1_key.public_key, &message, &is_musig).is_ok())
     }
-
 
     #[test]
 
@@ -162,8 +144,7 @@ mod tests {
         let party1_key = KeyPair::create_from_private_key(
             &BigInt::from_str_radix(&private_key_raw, 16).unwrap(),
         );
-        let party1_ephemeral_key =
-            EphemeralKey::create_from_private_key(&party1_key, &message);
+        let party1_ephemeral_key = EphemeralKey::create_from_private_key(&party1_key, &message);
 
         // compute c = H0(Rtag || apk || message)
         let party1_h_0 = EphemeralKey::hash_0(
@@ -197,14 +178,6 @@ mod tests {
         assert_eq!(test_vector_R, sig_R);
         assert_eq!(test_vector_s, sig_s);
         // verify:
-        assert!(
-            verify(
-                &s,
-                &R,
-                &party1_key.public_key,
-                &message,
-                &is_musig
-            ).is_ok()
-        )
+        assert!(verify(&s, &R, &party1_key.public_key, &message, &is_musig).is_ok())
     }
 }

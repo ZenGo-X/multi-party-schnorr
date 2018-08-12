@@ -25,10 +25,10 @@ use cryptography_utils::elliptic::curves::traits::*;
 use cryptography_utils::cryptographic_primitives::hashing::hash_sha256::HSha256;
 use cryptography_utils::cryptographic_primitives::hashing::traits::*;
 
-use cryptography_utils::cryptographic_primitives::commitments::hash_commitment::HashCommitment;
-use cryptography_utils::cryptographic_primitives::commitments::traits::*;
 use cryptography_utils::arithmetic::traits::Converter;
 use cryptography_utils::arithmetic::traits::Modulo;
+use cryptography_utils::cryptographic_primitives::commitments::hash_commitment::HashCommitment;
+use cryptography_utils::cryptographic_primitives::commitments::traits::*;
 
 #[derive(Debug)]
 pub struct KeyPair {
@@ -39,11 +39,11 @@ pub struct KeyPair {
 impl KeyPair {
     pub fn create() -> KeyPair {
         let ec_point: GE = ECPoint::new();
-        let private_key : FE = ECScalar::new_random();
+        let private_key: FE = ECScalar::new_random();
         let public_key = ec_point.scalar_mul(&private_key.get_element());
         KeyPair {
             public_key,
-            private_key
+            private_key,
         }
     }
 
@@ -53,7 +53,7 @@ impl KeyPair {
         let public_key = ec_point.scalar_mul(&private_key.get_element());
         KeyPair {
             public_key,
-            private_key
+            private_key,
         }
     }
 }
@@ -85,11 +85,11 @@ impl KeyAgg {
         let hash2_fe: FE = ECScalar::from_big_int(&hash2);
         let mut pk2 = other_pk.clone();
         let mut a2 = pk2.scalar_mul(&hash2_fe.get_element());
-        let apk  = a2.add_point(&(a1.get_element()));
+        let apk = a2.add_point(&(a1.get_element()));
         KeyAgg { apk: apk, hash }
     }
 
-    pub fn key_aggregation_n( pks: &Vec<GE>, party_index: &usize) -> KeyAgg {
+    pub fn key_aggregation_n(pks: &Vec<GE>, party_index: &usize) -> KeyAgg {
         let bn_1 = BigInt::from(1);
         let x_coor_vec: Vec<BigInt> = (0..pks.len())
             .into_iter()
@@ -105,8 +105,7 @@ impl KeyAgg {
                     vec.push(&x_coor_vec[i]);
                 }
                 HSha256::create_hash(vec)
-            })
-            .collect();
+            }).collect();
 
         let apk_vec: Vec<GE> = pks
             .iter()
@@ -116,8 +115,7 @@ impl KeyAgg {
                 let mut pki: GE = pk.clone();
                 let a_i = pki.scalar_mul(&hash_t.get_element());
                 a_i
-            })
-            .collect();
+            }).collect();
 
         let mut apk_vec_2_n = apk_vec.clone();
         let pk1 = apk_vec_2_n.remove(0);
@@ -151,7 +149,7 @@ impl EphemeralKey {
         }
     }
 
-    pub fn create_from_private_key( x1: &KeyPair, message: &[u8]) -> EphemeralKey {
+    pub fn create_from_private_key(x1: &KeyPair, message: &[u8]) -> EphemeralKey {
         let base_point: GE = ECPoint::new();
         let hash_private_key_message =
             HSha256::create_hash(vec![&x1.private_key.to_big_int(), &BigInt::from(message)]);
@@ -201,7 +199,10 @@ impl EphemeralKey {
     pub fn add_signature_parts(s1: &BigInt, s2: &BigInt, r_tag: &GE) -> (BigInt, BigInt) {
         let temps: FE = ECScalar::new_random();
         let curve_order = temps.get_q();
-        (r_tag.get_x_coor_as_big_int(), BigInt::mod_add(&s1, &s2, &curve_order))
+        (
+            r_tag.get_x_coor_as_big_int(),
+            BigInt::mod_add(&s1, &s2, &curve_order),
+        )
     }
 
     pub fn sign(r: &EphemeralKey, c: &BigInt, x: &KeyPair, a: &BigInt) -> BigInt {
@@ -247,11 +248,11 @@ pub fn verify(
     let minus_c = BigInt::mod_sub(&curve_order, &c, &curve_order);
     let minus_c_fe: FE = ECScalar::from_big_int(&minus_c);
     let signature_fe: FE = ECScalar::from_big_int(signature);
-    let sG  = base_point.scalar_mul(&signature_fe.get_element());
+    let sG = base_point.scalar_mul(&signature_fe.get_element());
     let mut apk_c: GE = apk.clone();
     let cY = apk_c.scalar_mul(&minus_c_fe.get_element());
     let sG = sG.add_point(&cY.get_element());
-    if sG.get_x_coor_as_big_int().to_hex()== *r_x.to_hex(){
+    if sG.get_x_coor_as_big_int().to_hex() == *r_x.to_hex() {
         Ok(())
     } else {
         Err(ProofError)
