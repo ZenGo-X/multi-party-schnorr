@@ -196,15 +196,6 @@ impl EphemeralKey {
         }
     }
 
-    pub fn add_signature_parts(s1: &BigInt, s2: &BigInt, r_tag: &GE) -> (BigInt, BigInt) {
-        let temps: FE = ECScalar::new_random();
-        let curve_order = temps.get_q();
-        (
-            r_tag.get_x_coor_as_big_int(),
-            BigInt::mod_add(&s1, &s2, &curve_order),
-        )
-    }
-
     pub fn sign(r: &EphemeralKey, c: &BigInt, x: &KeyPair, a: &BigInt) -> BigInt {
         let temps: FE = ECScalar::new_random();
         let curve_order = temps.get_q();
@@ -218,6 +209,22 @@ impl EphemeralKey {
             &curve_order,
         )
     }
+
+    pub fn add_signature_parts(s1: &BigInt, s2: &BigInt, r_tag: &GE) -> (BigInt, BigInt) {
+        if *s2 == BigInt::from(0){
+            (r_tag.get_x_coor_as_big_int(), s1.clone())
+        }
+            else {
+                let temps: FE = ECScalar::new_random();
+                let curve_order = temps.get_q();
+                let s1_fe: FE = ECScalar::from_big_int(&s1);
+                let s2_fe: FE = ECScalar::from_big_int(&s2);
+                let s1_plus_s2 = s1_fe.add(&s2_fe.get_element());
+                (r_tag.get_x_coor_as_big_int(), s1_plus_s2.to_big_int())
+            }
+    }
+
+
 }
 
 pub fn verify(
