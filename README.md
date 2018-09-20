@@ -7,7 +7,7 @@ Currently supporting two protocols:
 * Aggragated Signatures:  {n,n} scheme based on https://eprint.iacr.org/2018/068.pdf and the scheme for discrete-logs (section 5) from https://eprint.iacr.org/2018/483.pdf  
 * Multi-signature scheme based on  Micali-Ohta-Reyzin: Accountable-Subgroup Multisignatures: https://pdfs.semanticscholar.org/6bf4/f9450e7a8e31c106a8670b961de4735589cf.pdf
 
-The implementations are compatible Schnorr for bitcoin (https://github.com/sipa/bips/blob/bip-schnorr/bip-schnorr.mediawiki)
+The implementations are _bip-schnorr_ compatible (https://github.com/sipa/bips/blob/bip-schnorr/bip-schnorr.mediawiki)
 
 Disclaimer: (1) This code should not be used for production at the moment. (2) This code is not secure against side-channel attacks
 
