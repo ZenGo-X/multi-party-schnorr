@@ -17,7 +17,7 @@
 //! Simple Schnorr {2,2}-Signatures
 //!
 //! See https://eprint.iacr.org/2018/068.pdf, https://eprint.iacr.org/2018/483.pdf subsection 5.1
-use cryptography_utils::{BigInt, EC, PK, SK};
+use cryptography_utils::{BigInt, FE, GE, PK, SK};
 
 use cryptography_utils::cryptographic_primitives::proofs::*;
 use cryptography_utils::elliptic::curves::traits::*;
@@ -25,31 +25,32 @@ use cryptography_utils::elliptic::curves::traits::*;
 use cryptography_utils::cryptographic_primitives::hashing::hash_sha256::HSha256;
 use cryptography_utils::cryptographic_primitives::hashing::traits::*;
 
+use cryptography_utils::arithmetic::traits::Converter;
+use cryptography_utils::arithmetic::traits::Modulo;
 use cryptography_utils::cryptographic_primitives::commitments::hash_commitment::HashCommitment;
 use cryptography_utils::cryptographic_primitives::commitments::traits::*;
 
-use cryptography_utils::arithmetic::traits::Modulo;
-
 #[derive(Debug)]
 pub struct KeyPair {
-    pub public_key: PK,
-    private_key: SK,
+    pub public_key: GE,
+    private_key: FE,
 }
 
 impl KeyPair {
-    pub fn create(ec_context: &EC) -> KeyPair {
-        let mut public_key = PK::to_key(&ec_context, &EC::get_base_point());
-        let private_key = public_key.randomize(&ec_context);
+    pub fn create() -> KeyPair {
+        let ec_point: GE = ECPoint::generator();
+        let private_key: FE = ECScalar::new_random();
+        let public_key = ec_point.scalar_mul(&private_key.get_element());
         KeyPair {
             public_key,
             private_key,
         }
     }
 
-    pub fn create_from_private_key(ec_context: &EC, private_key: &BigInt) -> KeyPair {
-        let private_key = SK::from_big_int(ec_context, private_key);
-        let mut public_key = PK::to_key(&ec_context, &EC::get_base_point());
-        public_key.mul_assign(&ec_context, &private_key);
+    pub fn create_from_private_key(private_key: &BigInt) -> KeyPair {
+        let ec_point: GE = ECPoint::generator();
+        let private_key: FE = ECScalar::from(private_key);
+        let public_key = ec_point.scalar_mul(&private_key.get_element());
         KeyPair {
             public_key,
             private_key,
@@ -59,44 +60,40 @@ impl KeyPair {
 
 #[derive(Debug)]
 pub struct KeyAgg {
-    pub apk: PK,
+    pub apk: GE,
     pub hash: BigInt,
 }
 
 impl KeyAgg {
-    pub fn key_aggregation(ec_context: &EC, my_pk: &PK, other_pk: &PK) -> KeyAgg {
-        let hash = HSha256::create_hash(vec![
+    pub fn key_aggregation(my_pk: &GE, other_pk: &GE) -> KeyAgg {
+        let hash = HSha256::create_hash(&vec![
             &BigInt::from(1),
-            &my_pk.to_point().x,
-            &my_pk.to_point().x,
-            &other_pk.to_point().x,
+            &my_pk.x_coor(),
+            &my_pk.x_coor(),
+            &other_pk.x_coor(),
         ]);
-        let mut a1 = *my_pk;
-        assert!(
-            a1.mul_assign(ec_context, &SK::from_big_int(ec_context, &hash))
-                .is_ok()
-        );
+        let hash_fe: FE = ECScalar::from(&hash);
+        let mut pk1 = my_pk.clone();
+        let mut a1 = pk1.scalar_mul(&hash_fe.get_element());
 
-        let hash2 = HSha256::create_hash(vec![
+        let hash2 = HSha256::create_hash(&vec![
             &BigInt::from(1),
-            &other_pk.to_point().x,
-            &my_pk.to_point().x,
-            &other_pk.to_point().x,
+            &other_pk.x_coor(),
+            &my_pk.x_coor(),
+            &other_pk.x_coor(),
         ]);
-        let mut a2 = *other_pk;
-        assert!(
-            a2.mul_assign(ec_context, &SK::from_big_int(ec_context, &hash2))
-                .is_ok()
-        );
-        let apk = a2.combine(ec_context, &a1).unwrap();
-        KeyAgg { apk, hash }
+        let hash2_fe: FE = ECScalar::from(&hash2);
+        let mut pk2 = other_pk.clone();
+        let mut a2 = pk2.scalar_mul(&hash2_fe.get_element());
+        let apk = a2.add_point(&(a1.get_element()));
+        KeyAgg { apk: apk, hash }
     }
 
-    pub fn key_aggregation_n(ec_context: &EC, pks: &Vec<PK>, party_index: &usize) -> KeyAgg {
+    pub fn key_aggregation_n(pks: &Vec<GE>, party_index: &usize) -> KeyAgg {
         let bn_1 = BigInt::from(1);
         let x_coor_vec: Vec<BigInt> = (0..pks.len())
             .into_iter()
-            .map(|i| pks[i].to_point().x)
+            .map(|i| pks[i].x_coor())
             .collect();
         let hash_vec: Vec<BigInt> = x_coor_vec
             .iter()
@@ -107,28 +104,24 @@ impl KeyAgg {
                 for i in 0..pks.len() {
                     vec.push(&x_coor_vec[i]);
                 }
-                HSha256::create_hash(vec)
-            })
-            .collect();
+                HSha256::create_hash(&vec)
+            }).collect();
 
-        let apk_vec: Vec<PK> = pks
+        let apk_vec: Vec<GE> = pks
             .iter()
             .zip(&hash_vec)
             .map(|(pk, hash)| {
-                let mut a_i = pk.clone();
-                assert!(
-                    a_i.mul_assign(ec_context, &SK::from_big_int(ec_context, &hash))
-                        .is_ok()
-                );
+                let hash_t: FE = ECScalar::from(&hash);
+                let mut pki: GE = pk.clone();
+                let a_i = pki.scalar_mul(&hash_t.get_element());
                 a_i
-            })
-            .collect();
+            }).collect();
 
         let mut apk_vec_2_n = apk_vec.clone();
         let pk1 = apk_vec_2_n.remove(0);
         let sum = apk_vec_2_n
             .iter()
-            .fold(pk1, |acc, pk| acc.combine(&ec_context, pk).unwrap());
+            .fold(pk1, |acc, pk| acc.add_point(&pk.get_element()));
 
         KeyAgg {
             apk: sum,
@@ -145,10 +138,10 @@ pub struct EphemeralKey {
 }
 
 impl EphemeralKey {
-    pub fn create(ec_context: &EC) -> EphemeralKey {
-        let keypair = KeyPair::create(ec_context);
+    pub fn create() -> EphemeralKey {
+        let keypair = KeyPair::create();
         let (commitment, blind_factor) =
-            HashCommitment::create_commitment(&keypair.public_key.to_point().x);
+            HashCommitment::create_commitment(&keypair.public_key.x_coor());
         EphemeralKey {
             keypair,
             commitment,
@@ -156,12 +149,12 @@ impl EphemeralKey {
         }
     }
 
-    pub fn create_from_private_key(ec_context: &EC, x1: &KeyPair, message: &[u8]) -> EphemeralKey {
-        let mut ephemeral_public_key = PK::to_key(&ec_context, &EC::get_base_point());
+    pub fn create_from_private_key(x1: &KeyPair, message: &[u8]) -> EphemeralKey {
+        let base_point: GE = ECPoint::generator();
         let hash_private_key_message =
-            HSha256::create_hash(vec![&x1.private_key.to_big_int(), &BigInt::from(message)]);
-        let ephemeral_private_key = SK::from_big_int(ec_context, &hash_private_key_message);
-        ephemeral_public_key.mul_assign(ec_context, &ephemeral_private_key);
+            HSha256::create_hash(&vec![&x1.private_key.to_big_int(), &BigInt::from(message)]);
+        let ephemeral_private_key: FE = ECScalar::from(&hash_private_key_message);
+        let ephemeral_public_key = base_point.scalar_mul(&ephemeral_private_key.get_element());
         let (commitment, blind_factor) =
             HashCommitment::create_commitment(&ephemeral_public_key.bytes_compressed_to_big_int());
         EphemeralKey {
@@ -174,83 +167,99 @@ impl EphemeralKey {
         }
     }
 
-    pub fn test_com(r_to_test: &PK, blind_factor: &BigInt, comm: &BigInt) -> bool {
+    pub fn test_com(r_to_test: &GE, blind_factor: &BigInt, comm: &BigInt) -> bool {
         let computed_comm = &HashCommitment::create_commitment_with_user_defined_randomness(
-            &r_to_test.to_point().x,
+            &r_to_test.x_coor(),
             blind_factor,
         );
         computed_comm == comm
     }
 
-    pub fn add_ephemeral_pub_keys(ec_context: &EC, r1: &PK, r2: &PK) -> PK {
-        r1.combine(ec_context, r2).unwrap()
+    pub fn add_ephemeral_pub_keys(r1: &GE, r2: &GE) -> GE {
+        r1.add_point(&r2.get_element())
     }
 
-    pub fn hash_0(r_hat: &PK, apk: &PK, message: &[u8], musig_bit: &bool) -> BigInt {
+    pub fn hash_0(r_hat: &GE, apk: &GE, message: &[u8], musig_bit: &bool) -> BigInt {
         if *musig_bit {
-            HSha256::create_hash(vec![
+            HSha256::create_hash(&vec![
                 &BigInt::from(0),
-                &r_hat.to_point().x,
+                &r_hat.x_coor(),
                 &apk.bytes_compressed_to_big_int(),
                 &BigInt::from(message),
             ])
         } else {
-            HSha256::create_hash(vec![
-                &r_hat.to_point().x,
+            HSha256::create_hash(&vec![
+                &r_hat.x_coor(),
                 &apk.bytes_compressed_to_big_int(),
                 &BigInt::from(message),
             ])
         }
     }
 
-    pub fn add_signature_parts(s1: &BigInt, s2: &BigInt, r_tag: &PK) -> (BigInt, BigInt) {
-        (r_tag.to_point().x, BigInt::mod_add(&s1, &s2, &EC::get_q()))
-    }
-
     pub fn sign(r: &EphemeralKey, c: &BigInt, x: &KeyPair, a: &BigInt) -> BigInt {
+        let temps: FE = ECScalar::new_random();
+        let curve_order = temps.q();
         BigInt::mod_add(
             &r.keypair.private_key.to_big_int(),
             &BigInt::mod_mul(
                 c,
-                &BigInt::mod_mul(&x.private_key.to_big_int(), a, &EC::get_q()),
-                &EC::get_q(),
+                &BigInt::mod_mul(&x.private_key.to_big_int(), a, &curve_order),
+                &curve_order,
             ),
-            &EC::get_q(),
+            &curve_order,
         )
     }
+
+    pub fn add_signature_parts(s1: &BigInt, s2: &BigInt, r_tag: &GE) -> (BigInt, BigInt) {
+        if *s2 == BigInt::from(0){
+            (r_tag.x_coor(), s1.clone())
+        }
+            else {
+                let temps: FE = ECScalar::new_random();
+                let curve_order = temps.q();
+                let s1_fe: FE = ECScalar::from(&s1);
+                let s2_fe: FE = ECScalar::from(&s2);
+                let s1_plus_s2 = s1_fe.add(&s2_fe.get_element());
+                (r_tag.x_coor(), s1_plus_s2.to_big_int())
+            }
+    }
+
+
 }
 
 pub fn verify(
-    ec_context: &EC,
     signature: &BigInt,
     r_x: &BigInt,
-    apk: &PK,
+    apk: &GE,
     message: &[u8],
     musig_bit: &bool,
 ) -> Result<(), ProofError> {
+    let base_point: GE = ECPoint::generator();
+    let temps: FE = ECScalar::new_random();
+    let curve_order = temps.q();
     let mut c;
     if *musig_bit {
-        c = HSha256::create_hash(vec![
+        c = HSha256::create_hash(&vec![
             &BigInt::from(0),
             &r_x,
             &apk.bytes_compressed_to_big_int(),
             &BigInt::from(message),
         ]);
     } else {
-        c = HSha256::create_hash(vec![
+        c = HSha256::create_hash(&vec![
             r_x,
             &apk.bytes_compressed_to_big_int(),
             &BigInt::from(message),
         ]);
     }
-    let minus_c = BigInt::mod_sub(&EC::get_q(), &c, &EC::get_q());
-    let mut sG = PK::to_key(ec_context, &EC::get_base_point());
-
-    let mut cY = *apk;
-    cY.mul_assign(ec_context, &SK::from_big_int(ec_context, &minus_c));
-    sG.mul_assign(ec_context, &SK::from_big_int(ec_context, signature));
-
-    if *r_x == sG.combine(ec_context, &cY).unwrap().to_point().x {
+    let minus_c = BigInt::mod_sub(&curve_order, &c, &curve_order);
+    let minus_c_fe: FE = ECScalar::from(&minus_c);
+    let signature_fe: FE = ECScalar::from(signature);
+    let sG = base_point.scalar_mul(&signature_fe.get_element());
+    let mut apk_c: GE = apk.clone();
+    let cY = apk_c.scalar_mul(&minus_c_fe.get_element());
+    let sG = sG.add_point(&cY.get_element());
+    if sG.x_coor().to_hex() == *r_x.to_hex() {
         Ok(())
     } else {
         Err(ProofError)
