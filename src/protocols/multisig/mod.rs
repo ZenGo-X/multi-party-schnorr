@@ -23,6 +23,8 @@ use cryptography_utils::{BigInt, FE, GE};
 use cryptography_utils::cryptographic_primitives::hashing::hash_sha256::HSha256;
 use cryptography_utils::cryptographic_primitives::hashing::traits::*;
 use protocols::multisig;
+
+// I is a private key and public key keypair, X is a commitment of the form X = xG used only in key generation (see p11 in the paper)
 #[derive(Debug, Clone)]
 pub struct Keys {
     pub I: KeyPair,
@@ -73,10 +75,11 @@ impl Keys {
         let new_vec: Vec<&GE> = Vec::new();
         let concat_vec = ix_vec.iter().fold(new_vec, |mut acc, x| {
             acc.extend(x);
-            return acc;
+            acc
         });
-        let e = multisig::hash_4(&concat_vec);
-        e
+          multisig::hash_4(&concat_vec)
+
+
     }
 }
 
@@ -86,7 +89,7 @@ pub fn partial_sign(keys: &Keys, e: &FE) -> FE {
     return y;
 }
 
-pub fn verify(I: &GE, X: &GE, y: &FE, e: &FE) -> Result<(), ()> {
+pub fn verify<'a>(I: &GE, X: &GE, y: &FE, e: &FE) -> Result<(), &'a str> {
     let base_point: GE = ECPoint::generator();
     let yG = base_point.scalar_mul(&y.get_element());
     let I_c = I.clone();
@@ -95,11 +98,11 @@ pub fn verify(I: &GE, X: &GE, y: &FE, e: &FE) -> Result<(), ()> {
     if yG.get_element() == X_plus_eI.get_element() {
         Ok(())
     } else {
-        Err(())
+        Err("error verification")
     }
 }
 
-pub fn hash_4(key_list: &[&GE]) -> FE {
+  fn hash_4(key_list: &[&GE]) -> FE {
     let four_fe: FE = ECScalar::from(&BigInt::from(4));
     let base_point: GE = ECPoint::generator();
     let four_ge = base_point * four_fe;
