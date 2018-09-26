@@ -17,9 +17,9 @@
 //! Schnorr {n,n}-Signatures based on Accountable-Subgroup Multisignatures
 //!
 //See (https://pdfs.semanticscholar.org/6bf4/f9450e7a8e31c106a8670b961de4735589cf.pdf)
-use cryptography_utils::{BigInt, FE, GE, PK, SK};
 use cryptography_utils::cryptographic_primitives::proofs::*;
 use cryptography_utils::elliptic::curves::traits::*;
+use cryptography_utils::{BigInt, FE, GE, PK, SK};
 
 use cryptography_utils::cryptographic_primitives::hashing::hash_sha256::HSha256;
 use cryptography_utils::cryptographic_primitives::hashing::traits::*;
@@ -65,88 +65,97 @@ impl KeyPair {
 
 impl Keys {
     //TODO:: add create from private key
-    pub fn create() -> Keys{
+    pub fn create() -> Keys {
         let I = KeyPair::create();
         let X = KeyPair::create();
-        Keys{
-            I,
-            X
-        }
+        Keys { I, X }
     }
 
-    pub fn broadcast( keys: &Keys) ->Vec<&GE>{
-       return vec![&keys.I.public_key,&keys.X.public_key];
+    pub fn broadcast(keys: &Keys) -> Vec<&GE> {
+        return vec![&keys.I.public_key, &keys.X.public_key];
     }
 
-    pub fn collect_and_compute_challenge(ix_vec: &Vec<Vec<&GE>>) -> FE{
-        let mut new_vec: Vec<&GE>  = Vec::new();
-        let concat_vec = ix_vec.iter()
-            .fold(new_vec, |mut acc, mut x| {acc.extend(x); return acc});
+    pub fn collect_and_compute_challenge(ix_vec: &Vec<Vec<&GE>>) -> FE {
+        let mut new_vec: Vec<&GE> = Vec::new();
+        let concat_vec = ix_vec.iter().fold(new_vec, |mut acc, mut x| {
+            acc.extend(x);
+            return acc;
+        });
         let e = multisig::hash_4(&concat_vec);
         e
     }
-
 }
 
-pub fn partial_sign(keys: &Keys, e: &FE) -> FE{
+pub fn partial_sign(keys: &Keys, e: &FE) -> FE {
     let es = e.mul(&keys.I.private_key.get_element());
     let y = es.add(&keys.X.private_key.get_element());
     return y;
 }
 
-pub fn verify(I: &GE, X: &GE, y: &FE, e: &FE) ->Result<(),()>{
+pub fn verify(I: &GE, X: &GE, y: &FE, e: &FE) -> Result<(), ()> {
     let base_point: GE = ECPoint::generator();
     let yG = base_point.scalar_mul(&y.get_element());
     let I_c = I.clone();
-    let eI =  I_c.scalar_mul(&e.get_element());
+    let eI = I_c.scalar_mul(&e.get_element());
     let X_plus_eI = X.add_point(&eI.get_element());
-    if yG.get_element()==X_plus_eI.get_element() {Ok(()) } else{Err(())}
-
+    if yG.get_element() == X_plus_eI.get_element() {
+        Ok(())
+    } else {
+        Err(())
+    }
 }
 
-pub fn hash_4(key_list: &[&GE]) -> FE{
+pub fn hash_4(key_list: &[&GE]) -> FE {
     let four_fe: FE = ECScalar::from(&BigInt::from(4));
     let base_point: GE = ECPoint::generator();
     let four_ge = base_point * four_fe;
-    let mut four_ge_vec  = vec![&four_ge];
+    let mut four_ge_vec = vec![&four_ge];
     four_ge_vec.extend(key_list);
     HSha256::create_hash_from_ge(&four_ge_vec)
 }
 
-pub struct EphKey{
+pub struct EphKey {
     eph_key_pair: KeyPair,
 }
 
-impl EphKey{
+impl EphKey {
     //signing step 1
-    pub fn gen_commit() -> EphKey{
+    pub fn gen_commit() -> EphKey {
         let eph_key_pair = KeyPair::create();
-        EphKey{eph_key_pair}
+        EphKey { eph_key_pair }
     }
     //signing steps 2,3
     // we treat S as a list of public keys and compute a sum.
-    pub fn compute_joint_comm_e(mut pub_key_vec: Vec<GE>, mut eph_pub_key_vec: Vec<GE>, message: &[u8]) -> (GE, GE, FE){
+    pub fn compute_joint_comm_e(
+        mut pub_key_vec: Vec<GE>,
+        mut eph_pub_key_vec: Vec<GE>,
+        message: &[u8],
+    ) -> (GE, GE, FE) {
         let first_pub_key = pub_key_vec.remove(0);
-        let sum_pub = pub_key_vec.iter()
-            .fold(first_pub_key, |mut acc,  x| acc.add_point(&x.get_element()));
+        let sum_pub = pub_key_vec
+            .iter()
+            .fold(first_pub_key, |mut acc, x| acc.add_point(&x.get_element()));
         let first_eph_pub_key = eph_pub_key_vec.remove(0);
-        let sum_pub_eph = eph_pub_key_vec.iter()
-            .fold(first_eph_pub_key, |mut acc,  x| acc.add_point(&x.get_element()));
+        let sum_pub_eph = eph_pub_key_vec
+            .iter()
+            .fold(first_eph_pub_key, |mut acc, x| {
+                acc.add_point(&x.get_element())
+            });
         //TODO: maybe there is a better way?
         let m_fe: FE = ECScalar::from(&BigInt::from(message));
         let base_point: GE = GE::generator();
         let m_ge = base_point.scalar_mul(&m_fe.get_element());
-        let input = vec![&sum_pub_eph,&m_ge,&sum_pub];
+        let input = vec![&sum_pub_eph, &m_ge, &sum_pub];
         let e = multisig::hash_4(&input);
         (sum_pub.clone(), sum_pub_eph.clone(), e)
     }
 
-
-    pub fn add_signature_parts(sig_vec: &Vec<FE>) -> FE{
+    pub fn add_signature_parts(sig_vec: &Vec<FE>) -> FE {
         let mut sig_vec_c = sig_vec.clone();
         let first_sig = sig_vec_c.remove(0);
-        let sum_sig = sig_vec_c.iter()
-            .fold(first_sig, |mut acc,  x| acc.add(&x.get_element()));
+        let sum_sig = sig_vec_c
+            .iter()
+            .fold(first_sig, |mut acc, x| acc.add(&x.get_element()));
         return sum_sig;
     }
 }

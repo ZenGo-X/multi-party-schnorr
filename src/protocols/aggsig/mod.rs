@@ -211,19 +211,17 @@ impl EphemeralKey {
     }
 
     pub fn add_signature_parts(s1: &BigInt, s2: &BigInt, r_tag: &GE) -> (BigInt, BigInt) {
-        if *s2 == BigInt::from(0){
+        if *s2 == BigInt::from(0) {
             (r_tag.x_coor(), s1.clone())
+        } else {
+            let temps: FE = ECScalar::new_random();
+            let curve_order = temps.q();
+            let s1_fe: FE = ECScalar::from(&s1);
+            let s2_fe: FE = ECScalar::from(&s2);
+            let s1_plus_s2 = s1_fe.add(&s2_fe.get_element());
+            (r_tag.x_coor(), s1_plus_s2.to_big_int())
         }
-            else {
-                let temps: FE = ECScalar::new_random();
-                let curve_order = temps.q();
-                let s1_fe: FE = ECScalar::from(&s1);
-                let s2_fe: FE = ECScalar::from(&s2);
-                let s1_plus_s2 = s1_fe.add(&s2_fe.get_element());
-                (r_tag.x_coor(), s1_plus_s2.to_big_int())
-            }
     }
-
 }
 
 pub fn verify(

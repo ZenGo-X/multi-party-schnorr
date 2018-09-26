@@ -16,11 +16,11 @@
 
 #[cfg(test)]
 mod tests {
-    use cryptography_utils::{FE, GE, PK, SK};
     use cryptography_utils::cryptographic_primitives::hashing::merkle_tree::MT256;
-    use protocols::multisig::{KeyPair,Keys,EphKey,partial_sign, verify};
-    use protocols::multisig;
     use cryptography_utils::elliptic::curves::traits::*;
+    use cryptography_utils::{FE, GE, PK, SK};
+    use protocols::multisig;
+    use protocols::multisig::{partial_sign, verify, EphKey, KeyPair, Keys};
 
     #[test]
     fn two_party_key_gen() {
@@ -31,9 +31,8 @@ mod tests {
         // party2 key gen:
         let keys_2 = Keys::create();
         let mut broadcast2 = Keys::broadcast(&keys_2);
-        let ix_vec = vec![broadcast1,broadcast2];
+        let ix_vec = vec![broadcast1, broadcast2];
         let e = Keys::collect_and_compute_challenge(&ix_vec);
-
 
         let y1 = partial_sign(&keys_1, &e);
         let y2 = partial_sign(&keys_2, &e);
@@ -44,7 +43,7 @@ mod tests {
 
         // merkle tree (in case needed)
 
-        let ge_vec = vec![(keys_1.I.public_key).clone(),(keys_2.I.public_key).clone()];
+        let ge_vec = vec![(keys_1.I.public_key).clone(), (keys_2.I.public_key).clone()];
         let mt256 = MT256::create_tree(&ge_vec);
         let proof1 = mt256.gen_proof_for_ge(&keys_1.I.public_key);
         let proof2 = mt256.gen_proof_for_ge(&keys_2.I.public_key);
@@ -56,21 +55,30 @@ mod tests {
 
         let party2_com = EphKey::gen_commit();
 
-        let eph_pub_key_vec = vec![party1_com.eph_key_pair.public_key.clone(),party2_com.eph_key_pair.public_key.clone()];
-        let pub_key_vec = vec![keys_1.I.public_key.clone(),keys_2.I.public_key.clone()];
+        let eph_pub_key_vec = vec![
+            party1_com.eph_key_pair.public_key.clone(),
+            party2_com.eph_key_pair.public_key.clone(),
+        ];
+        let pub_key_vec = vec![keys_1.I.public_key.clone(), keys_2.I.public_key.clone()];
 
         let (It, Xt, es) = EphKey::compute_joint_comm_e(pub_key_vec, eph_pub_key_vec, &message);
-        let party1_sign_key = Keys{I:keys_1.I.clone(), X: party1_com.eph_key_pair.clone()};
-        let party2_sign_key = Keys{I:keys_2.I.clone(), X: party2_com.eph_key_pair.clone()};
+        let party1_sign_key = Keys {
+            I: keys_1.I.clone(),
+            X: party1_com.eph_key_pair.clone(),
+        };
+        let party2_sign_key = Keys {
+            I: keys_2.I.clone(),
+            X: party2_com.eph_key_pair.clone(),
+        };
 
         let y1 = partial_sign(&party1_sign_key, &es);
         let y2 = partial_sign(&party2_sign_key, &es);
-        let y = EphKey::add_signature_parts(&vec![y1,y2]);
+        let y = EphKey::add_signature_parts(&vec![y1, y2]);
 
-        assert!(verify(&It, &Xt,&y,&es).is_ok());
+        assert!(verify(&It, &Xt, &y, &es).is_ok());
 
         assert!(MT256::validate_proof(&proof1, root).is_ok());
         assert!(MT256::validate_proof(&proof2, root).is_ok());
     }
 
-    }
+}
