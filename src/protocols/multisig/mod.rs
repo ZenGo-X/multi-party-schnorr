@@ -17,17 +17,11 @@
 //! Schnorr {n,n}-Signatures based on Accountable-Subgroup Multisignatures
 //!
 //See (https://pdfs.semanticscholar.org/6bf4/f9450e7a8e31c106a8670b961de4735589cf.pdf)
-use cryptography_utils::cryptographic_primitives::proofs::*;
 use cryptography_utils::elliptic::curves::traits::*;
-use cryptography_utils::{BigInt, FE, GE, PK, SK};
+use cryptography_utils::{BigInt, FE, GE};
 
 use cryptography_utils::cryptographic_primitives::hashing::hash_sha256::HSha256;
 use cryptography_utils::cryptographic_primitives::hashing::traits::*;
-
-use cryptography_utils::arithmetic::traits::Converter;
-use cryptography_utils::arithmetic::traits::Modulo;
-use cryptography_utils::cryptographic_primitives::commitments::hash_commitment::HashCommitment;
-use cryptography_utils::cryptographic_primitives::commitments::traits::*;
 use protocols::multisig;
 #[derive(Debug, Clone)]
 pub struct Keys {
@@ -76,8 +70,8 @@ impl Keys {
     }
 
     pub fn collect_and_compute_challenge(ix_vec: &Vec<Vec<&GE>>) -> FE {
-        let mut new_vec: Vec<&GE> = Vec::new();
-        let concat_vec = ix_vec.iter().fold(new_vec, |mut acc, mut x| {
+        let new_vec: Vec<&GE> = Vec::new();
+        let concat_vec = ix_vec.iter().fold(new_vec, |mut acc, x| {
             acc.extend(x);
             return acc;
         });
