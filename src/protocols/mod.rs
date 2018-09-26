@@ -13,5 +13,7 @@
 
     @license GPL-3.0+ <https://github.com/KZen-networks/multisig-schnorr/blob/master/LICENSE>
 */
-// Simple Schnorr {2,2}-Signatures (https://eprint.iacr.org/2018/068.pdf, https://eprint.iacr.org/2018/483.pdf subsection 5.1)
-pub mod multi_sig;
+// aggregated Schnorr {n,n}-Signatures (https://eprint.iacr.org/2018/068.pdf, https://eprint.iacr.org/2018/483.pdf subsection 5.1)
+pub mod aggsig;
+//Schnorr {n,n}-Signatures based on Accountable-Subgroup Multisignatures (https://pdfs.semanticscholar.org/6bf4/f9450e7a8e31c106a8670b961de4735589cf.pdf)
+pub mod multisig;

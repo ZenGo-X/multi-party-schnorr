@@ -14,7 +14,7 @@
     @license GPL-3.0+ <https://github.com/KZen-networks/multisig-schnorr/blob/master/LICENSE>
 */
 
-//! Simple Schnorr {2,2}-Signatures
+//! aggregated Schnorr {n,n}-Signatures
 //!
 //! See https://eprint.iacr.org/2018/068.pdf, https://eprint.iacr.org/2018/483.pdf subsection 5.1
 use cryptography_utils::{BigInt, FE, GE, PK, SK};
@@ -223,7 +223,6 @@ impl EphemeralKey {
                 (r_tag.x_coor(), s1_plus_s2.to_big_int())
             }
     }
-
 
 }
 
