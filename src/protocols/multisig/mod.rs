@@ -89,7 +89,9 @@ pub fn partial_sign(keys: &Keys, e: &FE) -> FE {
     return y;
 }
 
-pub fn verify<'a>(I: &GE, X: &GE, y: &FE, e: &FE) -> Result<(), &'a str> {
+pub fn verify<'a>(I: &GE, sig: &Signature, e: &FE) -> Result<(), &'a str> {
+    let X = &sig.X;
+    let y = &sig.y;
     let base_point: GE = ECPoint::generator();
     let yG = base_point.scalar_mul(&y.get_element());
     let I_c = I.clone();
@@ -154,6 +156,20 @@ impl EphKey {
             .iter()
             .fold(first_sig, |mut acc, x| acc.add(&x.get_element()));
         return sum_sig;
+    }
+}
+
+pub struct Signature {
+    X: GE,
+    y: FE,
+}
+
+impl Signature{
+    pub fn set_signature(X: &GE,  y: &FE) -> Signature {
+        Signature{
+            X:X.clone(),
+            y:y.clone(),
+        }
     }
 }
 

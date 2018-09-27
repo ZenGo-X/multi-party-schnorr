@@ -20,7 +20,7 @@ mod tests {
     use cryptography_utils::elliptic::curves::traits::*;
     use cryptography_utils::{FE, GE, PK, SK};
     use protocols::multisig;
-    use protocols::multisig::{partial_sign, verify, EphKey, KeyPair, Keys};
+    use protocols::multisig::{partial_sign, verify,Signature, EphKey, KeyPair, Keys};
 
     #[test]
     fn two_party_key_gen() {
@@ -36,10 +36,11 @@ mod tests {
 
         let y1 = partial_sign(&keys_1, &e);
         let y2 = partial_sign(&keys_2, &e);
-
+        let sig1 = Signature::set_signature(&keys_1.X.public_key, &y1);
+        let sig2 = Signature::set_signature(&keys_2.X.public_key, &y2);
         // partial verify
-        assert!(verify(&keys_1.I.public_key, &keys_1.X.public_key, &y1, &e).is_ok());
-        assert!(verify(&keys_2.I.public_key, &keys_2.X.public_key, &y2, &e).is_ok());
+        assert!(verify(&keys_1.I.public_key, &sig1, &e).is_ok());
+        assert!(verify(&keys_2.I.public_key, &sig2, &e).is_ok());
 
         // merkle tree (in case needed)
 
@@ -74,8 +75,8 @@ mod tests {
         let y1 = partial_sign(&party1_sign_key, &es);
         let y2 = partial_sign(&party2_sign_key, &es);
         let y = EphKey::add_signature_parts(&vec![y1, y2]);
-
-        assert!(verify(&It, &Xt, &y, &es).is_ok());
+        let sig = Signature::set_signature(&Xt, &y);
+        assert!(verify(&It, &sig, &es).is_ok());
 
         assert!(MT256::validate_proof(&proof1, root).is_ok());
         assert!(MT256::validate_proof(&proof2, root).is_ok());
