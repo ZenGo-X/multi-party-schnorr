@@ -20,7 +20,7 @@ mod tests {
     use cryptography_utils::elliptic::curves::traits::*;
     use cryptography_utils::{FE, GE, PK, SK};
     use protocols::multisig;
-    use protocols::multisig::{partial_sign, verify,Signature, EphKey, KeyPair, Keys};
+    use protocols::multisig::{partial_sign, verify, EphKey, KeyPair, Keys, Signature};
 
     #[test]
     fn two_party_key_gen() {

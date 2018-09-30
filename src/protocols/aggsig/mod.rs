@@ -105,7 +105,8 @@ impl KeyAgg {
                     vec.push(&x_coor_vec[i]);
                 }
                 HSha256::create_hash(&vec)
-            }).collect();
+            })
+            .collect();
 
         let apk_vec: Vec<GE> = pks
             .iter()
@@ -115,7 +116,8 @@ impl KeyAgg {
                 let pki: GE = pk.clone();
                 let a_i = pki.scalar_mul(&hash_t.get_element());
                 a_i
-            }).collect();
+            })
+            .collect();
 
         let mut apk_vec_2_n = apk_vec.clone();
         let pk1 = apk_vec_2_n.remove(0);

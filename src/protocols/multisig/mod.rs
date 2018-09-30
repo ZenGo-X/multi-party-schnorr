@@ -77,9 +77,7 @@ impl Keys {
             acc.extend(x);
             acc
         });
-          multisig::hash_4(&concat_vec)
-
-
+        multisig::hash_4(&concat_vec)
     }
 }
 
@@ -104,7 +102,7 @@ pub fn verify<'a>(I: &GE, sig: &Signature, e: &FE) -> Result<(), &'a str> {
     }
 }
 
-  fn hash_4(key_list: &[&GE]) -> FE {
+fn hash_4(key_list: &[&GE]) -> FE {
     let four_fe: FE = ECScalar::from(&BigInt::from(4));
     let base_point: GE = ECPoint::generator();
     let four_ge = base_point * four_fe;
@@ -164,11 +162,11 @@ pub struct Signature {
     y: FE,
 }
 
-impl Signature{
-    pub fn set_signature(X: &GE,  y: &FE) -> Signature {
-        Signature{
-            X:X.clone(),
-            y:y.clone(),
+impl Signature {
+    pub fn set_signature(X: &GE, y: &FE) -> Signature {
+        Signature {
+            X: X.clone(),
+            y: y.clone(),
         }
     }
 }
