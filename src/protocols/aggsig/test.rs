@@ -18,7 +18,7 @@
 mod tests {
     use cryptography_utils::BigInt;
     use cryptography_utils::{FE, GE, PK, SK};
-    use protocols::multi_sig::{verify, EphemeralKey, KeyAgg, KeyPair};
+    use protocols::aggsig::{verify, EphemeralKey, KeyAgg, KeyPair};
     extern crate hex;
 
     #[test]

@@ -14,10 +14,10 @@
     @license GPL-3.0+ <https://github.com/KZen-networks/multisig-schnorr/blob/master/LICENSE>
 */
 
-//! Simple Schnorr {2,2}-Signatures
+//! aggregated Schnorr {n,n}-Signatures
 //!
 //! See https://eprint.iacr.org/2018/068.pdf, https://eprint.iacr.org/2018/483.pdf subsection 5.1
-use cryptography_utils::{BigInt, FE, GE, PK, SK};
+use cryptography_utils::{BigInt, FE, GE};
 
 use cryptography_utils::cryptographic_primitives::proofs::*;
 use cryptography_utils::elliptic::curves::traits::*;
@@ -73,8 +73,8 @@ impl KeyAgg {
             &other_pk.x_coor(),
         ]);
         let hash_fe: FE = ECScalar::from(&hash);
-        let mut pk1 = my_pk.clone();
-        let mut a1 = pk1.scalar_mul(&hash_fe.get_element());
+        let pk1 = my_pk.clone();
+        let a1 = pk1.scalar_mul(&hash_fe.get_element());
 
         let hash2 = HSha256::create_hash(&vec![
             &BigInt::from(1),
@@ -83,8 +83,8 @@ impl KeyAgg {
             &other_pk.x_coor(),
         ]);
         let hash2_fe: FE = ECScalar::from(&hash2);
-        let mut pk2 = other_pk.clone();
-        let mut a2 = pk2.scalar_mul(&hash2_fe.get_element());
+        let pk2 = other_pk.clone();
+        let a2 = pk2.scalar_mul(&hash2_fe.get_element());
         let apk = a2.add_point(&(a1.get_element()));
         KeyAgg { apk: apk, hash }
     }
@@ -112,7 +112,7 @@ impl KeyAgg {
             .zip(&hash_vec)
             .map(|(pk, hash)| {
                 let hash_t: FE = ECScalar::from(&hash);
-                let mut pki: GE = pk.clone();
+                let pki: GE = pk.clone();
                 let a_i = pki.scalar_mul(&hash_t.get_element());
                 a_i
             }).collect();
@@ -211,20 +211,16 @@ impl EphemeralKey {
     }
 
     pub fn add_signature_parts(s1: &BigInt, s2: &BigInt, r_tag: &GE) -> (BigInt, BigInt) {
-        if *s2 == BigInt::from(0){
+        if *s2 == BigInt::from(0) {
             (r_tag.x_coor(), s1.clone())
+        } else {
+            let temps: FE = ECScalar::new_random();
+            let s1_fe: FE = ECScalar::from(&s1);
+            let s2_fe: FE = ECScalar::from(&s2);
+            let s1_plus_s2 = s1_fe.add(&s2_fe.get_element());
+            (r_tag.x_coor(), s1_plus_s2.to_big_int())
         }
-            else {
-                let temps: FE = ECScalar::new_random();
-                let curve_order = temps.q();
-                let s1_fe: FE = ECScalar::from(&s1);
-                let s2_fe: FE = ECScalar::from(&s2);
-                let s1_plus_s2 = s1_fe.add(&s2_fe.get_element());
-                (r_tag.x_coor(), s1_plus_s2.to_big_int())
-            }
     }
-
-
 }
 
 pub fn verify(
@@ -256,7 +252,7 @@ pub fn verify(
     let minus_c_fe: FE = ECScalar::from(&minus_c);
     let signature_fe: FE = ECScalar::from(signature);
     let sG = base_point.scalar_mul(&signature_fe.get_element());
-    let mut apk_c: GE = apk.clone();
+    let apk_c: GE = apk.clone();
     let cY = apk_c.scalar_mul(&minus_c_fe.get_element());
     let sG = sG.add_point(&cY.get_element());
     if sG.x_coor().to_hex() == *r_x.to_hex() {
