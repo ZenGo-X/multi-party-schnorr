@@ -1,3 +1,4 @@
+#![allow(non_snake_case)]
 /*
     Multisig Schnorr
 
@@ -17,7 +18,7 @@
 #[cfg(test)]
 mod tests {
     use cryptography_utils::BigInt;
-    use cryptography_utils::{FE, GE, PK, SK};
+    use cryptography_utils::GE;
     use protocols::aggsig::{verify, EphemeralKey, KeyAgg, KeyPair};
     extern crate hex;
 

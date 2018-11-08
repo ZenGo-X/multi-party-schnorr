@@ -1,3 +1,4 @@
+#![allow(non_snake_case)]
 /*
     Multisig Schnorr
 
@@ -105,7 +106,8 @@ impl KeyAgg {
                     vec.push(&x_coor_vec[i]);
                 }
                 HSha256::create_hash(&vec)
-            }).collect();
+            })
+            .collect();
 
         let apk_vec: Vec<GE> = pks
             .iter()
@@ -115,7 +117,8 @@ impl KeyAgg {
                 let pki: GE = pk.clone();
                 let a_i = pki.scalar_mul(&hash_t.get_element());
                 a_i
-            }).collect();
+            })
+            .collect();
 
         let mut apk_vec_2_n = apk_vec.clone();
         let pk1 = apk_vec_2_n.remove(0);
@@ -197,8 +200,7 @@ impl EphemeralKey {
     }
 
     pub fn sign(r: &EphemeralKey, c: &BigInt, x: &KeyPair, a: &BigInt) -> BigInt {
-        let temps: FE = ECScalar::new_random();
-        let curve_order = temps.q();
+        let curve_order = FE::q();
         BigInt::mod_add(
             &r.keypair.private_key.to_big_int(),
             &BigInt::mod_mul(
@@ -214,7 +216,6 @@ impl EphemeralKey {
         if *s2 == BigInt::from(0) {
             (r_tag.x_coor(), s1.clone())
         } else {
-            let temps: FE = ECScalar::new_random();
             let s1_fe: FE = ECScalar::from(&s1);
             let s2_fe: FE = ECScalar::from(&s2);
             let s1_plus_s2 = s1_fe.add(&s2_fe.get_element());
@@ -231,9 +232,8 @@ pub fn verify(
     musig_bit: &bool,
 ) -> Result<(), ProofError> {
     let base_point: GE = ECPoint::generator();
-    let temps: FE = ECScalar::new_random();
-    let curve_order = temps.q();
-    let mut c;
+    let curve_order = FE::q();
+    let c;
     if *musig_bit {
         c = HSha256::create_hash(&vec![
             &BigInt::from(0),

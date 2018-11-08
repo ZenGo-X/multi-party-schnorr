@@ -1,3 +1,4 @@
+#![allow(non_snake_case)]
 /*
     Multisig Schnorr
 
@@ -41,7 +42,7 @@ impl KeyPair {
     pub fn create() -> KeyPair {
         let ec_point: GE = ECPoint::generator();
         let private_key: FE = ECScalar::new_random();
-        let public_key = ec_point.scalar_mul(&private_key.get_element());
+        let public_key = ec_point * &private_key;
         KeyPair {
             public_key,
             private_key,
@@ -51,7 +52,8 @@ impl KeyPair {
     pub fn create_from_private_key(private_key: &BigInt) -> KeyPair {
         let ec_point: GE = ECPoint::generator();
         let private_key: FE = ECScalar::from(private_key);
-        let public_key = ec_point.scalar_mul(&private_key.get_element());
+        let public_key = ec_point * &private_key;
+
         KeyPair {
             public_key,
             private_key,
@@ -67,6 +69,13 @@ impl Keys {
         Keys { I, X }
     }
 
+    pub fn create_signing_key(keys: &Keys, eph_key: &EphKey) -> Keys {
+        Keys {
+            I: keys.I.clone(),
+            X: eph_key.eph_key_pair.clone(),
+        }
+    }
+
     pub fn broadcast(keys: &Keys) -> Vec<&GE> {
         return vec![&keys.I.public_key, &keys.X.public_key];
     }
@@ -77,26 +86,21 @@ impl Keys {
             acc.extend(x);
             acc
         });
-          multisig::hash_4(&concat_vec)
-
-
+        multisig::hash_4(&concat_vec)
     }
 }
 
 pub fn partial_sign(keys: &Keys, e: &FE) -> FE {
-    let es = e.mul(&keys.I.private_key.get_element());
-    let y = es.add(&keys.X.private_key.get_element());
-    return y;
+    e.clone() * &keys.I.private_key + &keys.X.private_key
 }
 
 pub fn verify<'a>(I: &GE, sig: &Signature, e: &FE) -> Result<(), &'a str> {
     let X = &sig.X;
     let y = &sig.y;
     let base_point: GE = ECPoint::generator();
-    let yG = base_point.scalar_mul(&y.get_element());
-    let I_c = I.clone();
-    let eI = I_c.scalar_mul(&e.get_element());
-    let X_plus_eI = X.add_point(&eI.get_element());
+    let yG = base_point * y;
+    let eI = I * e;
+    let X_plus_eI = X + &eI;
     if yG.get_element() == X_plus_eI.get_element() {
         Ok(())
     } else {
@@ -104,7 +108,7 @@ pub fn verify<'a>(I: &GE, sig: &Signature, e: &FE) -> Result<(), &'a str> {
     }
 }
 
-  fn hash_4(key_list: &[&GE]) -> FE {
+fn hash_4(key_list: &[&GE]) -> FE {
     let four_fe: FE = ECScalar::from(&BigInt::from(4));
     let base_point: GE = ECPoint::generator();
     let four_ge = base_point * four_fe;
@@ -133,13 +137,11 @@ impl EphKey {
         let first_pub_key = pub_key_vec.remove(0);
         let sum_pub = pub_key_vec
             .iter()
-            .fold(first_pub_key, |mut acc, x| acc.add_point(&x.get_element()));
+            .fold(first_pub_key, |acc, x| acc.add_point(&x.get_element()));
         let first_eph_pub_key = eph_pub_key_vec.remove(0);
         let sum_pub_eph = eph_pub_key_vec
             .iter()
-            .fold(first_eph_pub_key, |mut acc, x| {
-                acc.add_point(&x.get_element())
-            });
+            .fold(first_eph_pub_key, |acc, x| acc.add_point(&x.get_element()));
         //TODO: maybe there is a better way?
         let m_fe: FE = ECScalar::from(&BigInt::from(message));
         let base_point: GE = GE::generator();
@@ -154,7 +156,7 @@ impl EphKey {
         let first_sig = sig_vec_c.remove(0);
         let sum_sig = sig_vec_c
             .iter()
-            .fold(first_sig, |mut acc, x| acc.add(&x.get_element()));
+            .fold(first_sig, |acc, x| acc.add(&x.get_element()));
         return sum_sig;
     }
 }
@@ -164,11 +166,11 @@ pub struct Signature {
     y: FE,
 }
 
-impl Signature{
-    pub fn set_signature(X: &GE,  y: &FE) -> Signature {
-        Signature{
-            X:X.clone(),
-            y:y.clone(),
+impl Signature {
+    pub fn set_signature(X: &GE, y: &FE) -> Signature {
+        Signature {
+            X: X.clone(),
+            y: y.clone(),
         }
     }
 }

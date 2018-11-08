@@ -17,20 +17,17 @@
 #[cfg(test)]
 mod tests {
     use cryptography_utils::cryptographic_primitives::hashing::merkle_tree::MT256;
-    use cryptography_utils::elliptic::curves::traits::*;
-    use cryptography_utils::{FE, GE, PK, SK};
-    use protocols::multisig;
-    use protocols::multisig::{partial_sign, verify,Signature, EphKey, KeyPair, Keys};
+    use protocols::multisig::{partial_sign, verify, EphKey, Keys, Signature};
 
     #[test]
     fn two_party_key_gen() {
         let message: [u8; 4] = [79, 77, 69, 82];
         // party1 key gen:
         let keys_1 = Keys::create();
-        let mut broadcast1 = Keys::broadcast(&keys_1);
+        let broadcast1 = Keys::broadcast(&keys_1);
         // party2 key gen:
         let keys_2 = Keys::create();
-        let mut broadcast2 = Keys::broadcast(&keys_2);
+        let broadcast2 = Keys::broadcast(&keys_2);
         let ix_vec = vec![broadcast1, broadcast2];
         let e = Keys::collect_and_compute_challenge(&ix_vec);
 
@@ -63,14 +60,8 @@ mod tests {
         let pub_key_vec = vec![keys_1.I.public_key.clone(), keys_2.I.public_key.clone()];
 
         let (It, Xt, es) = EphKey::compute_joint_comm_e(pub_key_vec, eph_pub_key_vec, &message);
-        let party1_sign_key = Keys {
-            I: keys_1.I.clone(),
-            X: party1_com.eph_key_pair.clone(),
-        };
-        let party2_sign_key = Keys {
-            I: keys_2.I.clone(),
-            X: party2_com.eph_key_pair.clone(),
-        };
+        let party1_sign_key = Keys::create_signing_key(&keys_1, &party1_com);
+        let party2_sign_key = Keys::create_signing_key(&keys_2, &party2_com);
 
         let y1 = partial_sign(&party1_sign_key, &es);
         let y2 = partial_sign(&party2_sign_key, &es);
