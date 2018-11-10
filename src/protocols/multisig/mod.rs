@@ -118,7 +118,7 @@ fn hash_4(key_list: &[&GE]) -> FE {
 }
 
 pub struct EphKey {
-    eph_key_pair: KeyPair,
+    pub eph_key_pair: KeyPair,
 }
 
 impl EphKey {
@@ -149,6 +149,10 @@ impl EphKey {
         let input = vec![&sum_pub_eph, &m_ge, &sum_pub];
         let e = multisig::hash_4(&input);
         (sum_pub.clone(), sum_pub_eph.clone(), e)
+    }
+
+    pub fn partial_sign(&self, local_keys: &KeyPair, es: &FE) -> FE {
+        es.clone() * &local_keys.private_key + &self.eph_key_pair.private_key
     }
 
     pub fn add_signature_parts(sig_vec: &Vec<FE>) -> FE {

@@ -60,11 +60,9 @@ mod tests {
         let pub_key_vec = vec![keys_1.I.public_key.clone(), keys_2.I.public_key.clone()];
 
         let (It, Xt, es) = EphKey::compute_joint_comm_e(pub_key_vec, eph_pub_key_vec, &message);
-        let party1_sign_key = Keys::create_signing_key(&keys_1, &party1_com);
-        let party2_sign_key = Keys::create_signing_key(&keys_2, &party2_com);
 
-        let y1 = partial_sign(&party1_sign_key, &es);
-        let y2 = partial_sign(&party2_sign_key, &es);
+        let y1 = party1_com.partial_sign(&keys_1.I, &es);
+        let y2 = party2_com.partial_sign(&keys_2.I, &es);
         let y = EphKey::add_signature_parts(&vec![y1, y2]);
         let sig = Signature::set_signature(&Xt, &y);
         assert!(verify(&It, &sig, &es).is_ok());
