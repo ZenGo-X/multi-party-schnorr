@@ -59,6 +59,16 @@ impl KeyPair {
             private_key,
         }
     }
+
+    pub fn update_key_pair(&self, to_add: &FE ) -> KeyPair {
+        let new_priv = self.private_key.clone() + to_add;
+        let g: GE = ECPoint::generator();
+        let new_pub = g * &new_priv;
+        KeyPair{
+            private_key: new_priv,
+            public_key:  new_pub,
+        }
+    }
 }
 
 impl Keys {
@@ -68,6 +78,7 @@ impl Keys {
         let X = KeyPair::create();
         Keys { I, X }
     }
+
 
     pub fn create_signing_key(keys: &Keys, eph_key: &EphKey) -> Keys {
         Keys {
