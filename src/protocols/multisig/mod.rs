@@ -87,17 +87,18 @@ impl Keys {
         }
     }
 
-    pub fn broadcast(keys: &Keys) -> Vec<&GE> {
-        return vec![&keys.I.public_key, &keys.X.public_key];
+    pub fn broadcast(keys: &Keys) -> Vec<GE> {
+        return vec![keys.I.public_key.clone(), keys.X.public_key.clone()];
     }
 
-    pub fn collect_and_compute_challenge(ix_vec: &Vec<Vec<&GE>>) -> FE {
-        let new_vec: Vec<&GE> = Vec::new();
+    pub fn collect_and_compute_challenge(ix_vec: &Vec<Vec<GE>>) -> FE {
+        let new_vec: Vec<GE> = Vec::new();
         let concat_vec = ix_vec.iter().fold(new_vec, |mut acc, x| {
-            acc.extend(x);
+            acc.extend_from_slice(x);
             acc
         });
-        multisig::hash_4(&concat_vec)
+        let ref_vec = (0..concat_vec.len()).map(|i| &concat_vec[i]).collect::<Vec<&GE>>();
+        multisig::hash_4(&ref_vec)
     }
 }
 
