@@ -49,14 +49,13 @@ impl KeyPair {
         }
     }
 
-    pub fn create_from_private_key(private_key: &BigInt) -> KeyPair {
-        let ec_point: GE = ECPoint::generator();
-        let private_key: FE = ECScalar::from(private_key);
-        let public_key = ec_point * &private_key;
+    pub fn create_from_private_key(secret_share: &FE) -> KeyPair {
+        let g: GE = ECPoint::generator();
+        let public_key = g * secret_share;
 
         KeyPair {
             public_key,
-            private_key,
+            private_key: secret_share.clone(),
         }
     }
 
@@ -75,6 +74,12 @@ impl Keys {
     //TODO:: add create from private key
     pub fn create() -> Keys {
         let I = KeyPair::create();
+        let X = KeyPair::create();
+        Keys { I, X }
+    }
+
+    pub fn create_from(secret_share: &FE) -> Keys {
+        let I = KeyPair::create_from_private_key(secret_share);
         let X = KeyPair::create();
         Keys { I, X }
     }
