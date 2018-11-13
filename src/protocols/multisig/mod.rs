@@ -97,7 +97,7 @@ impl Keys {
         return vec![keys.I.public_key, keys.X.public_key];
     }
 
-    pub fn collect_and_compute_challenge(ix_vec: &Vec<Vec<GE>>) -> FE {
+    pub fn collect_and_compute_challenge(ix_vec: &[Vec<GE>]) -> FE {
         let concat_vec = ix_vec.iter().fold(Vec::new(), |mut acc, x| {
             acc.extend_from_slice(x);
             acc
@@ -174,10 +174,8 @@ impl EphKey {
     pub fn add_signature_parts(sig_vec: Vec<FE>) -> FE {
         let mut sig_vec_c = sig_vec;
         let first_sig = sig_vec_c.remove(0);
-        let sum_sig = sig_vec_c
-            .iter()
-            .fold(first_sig, |acc, x| acc.add(&x.get_element()));
-        return sum_sig;
+
+        sig_vec_c.iter().fold(first_sig, |acc, x| acc.add(&x.get_element()))
     }
 }
 

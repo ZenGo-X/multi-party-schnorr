@@ -74,9 +74,9 @@ mod tests {
 
         // compute c = H0(Rtag || apk || message)
         let party1_h_0 =
-            EphemeralKey::hash_0(&party1_r_tag, &party1_key_agg.apk, &message, &is_musig);
+            EphemeralKey::hash_0(&party1_r_tag, &party1_key_agg.apk, &message, is_musig);
         let party2_h_0 =
-            EphemeralKey::hash_0(&party2_r_tag, &party2_key_agg.apk, &message, &is_musig);
+            EphemeralKey::hash_0(&party2_r_tag, &party2_key_agg.apk, &message, is_musig);
         assert_eq!(party1_h_0, party2_h_0);
 
         // compute partial signature s_i and send to the other party:
@@ -97,7 +97,7 @@ mod tests {
         let (r, s) = EphemeralKey::add_signature_parts(s1, &s2, &party1_r_tag);
 
         // verify:
-        assert!(verify(&s, &r, party1_key_agg.apk, &message, &is_musig,).is_ok())
+        assert!(verify(&s, &r, &party1_key_agg.apk, &message, is_musig,).is_ok())
     }
 
     #[test]
@@ -112,7 +112,7 @@ mod tests {
             &party1_ephemeral_key.keypair.public_key,
             &party1_key.public_key,
             &message,
-            &is_musig,
+            is_musig,
         );
 
         let s_tag = EphemeralKey::sign(
@@ -130,11 +130,10 @@ mod tests {
         );
 
         // verify:
-        assert!(verify(&s, &R, party1_key.public_key, &message, &is_musig).is_ok())
+        assert!(verify(&s, &R, &party1_key.public_key, &message, is_musig).is_ok())
     }
 
     #[test]
-
     fn test_schnorr_bip_test_vector_2() {
         let private_key_raw = "B7E151628AED2A6ABF7158809CF4F3C762E7160F38B4DA56A784D9045190CFEF";
         //let public_key_raw =  "03FAC2114C2FBB091527EB7C64ECB11F8021CB45E8E7809D3C0938E4B8C0E5F84B";
@@ -152,7 +151,7 @@ mod tests {
             &party1_ephemeral_key.keypair.public_key,
             &party1_key.public_key,
             &message,
-            &is_musig,
+            is_musig,
         );
 
         // compute partial signature s_i and send to the other party:
@@ -179,6 +178,6 @@ mod tests {
         assert_eq!(test_vector_R, sig_R);
         assert_eq!(test_vector_s, sig_s);
         // verify:
-        assert!(verify(&s, &R, party1_key.public_key, &message, &is_musig).is_ok())
+        assert!(verify(&s, &R, &party1_key.public_key, &message, is_musig).is_ok())
     }
 }

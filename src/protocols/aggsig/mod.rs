@@ -66,8 +66,8 @@ pub struct KeyAgg {
 }
 
 impl KeyAgg {
-    pub fn key_aggregation(my_pk: GE, other_pk: GE) -> KeyAgg {
-        let hash = HSha256::create_hash(&vec![
+    pub fn key_aggregation(my_pk: &GE, other_pk: &GE) -> KeyAgg {
+        let hash = HSha256::create_hash(&[
             &BigInt::from(1),
             &my_pk.x_coor(),
             &my_pk.x_coor(),
@@ -76,7 +76,7 @@ impl KeyAgg {
         let hash_fe: FE = ECScalar::from(&hash);
         let a1 = my_pk.scalar_mul(&hash_fe.get_element());
 
-        let hash2 = HSha256::create_hash(&vec![
+        let hash2 = HSha256::create_hash(&[
             &BigInt::from(1),
             &other_pk.x_coor(),
             &my_pk.x_coor(),
@@ -85,13 +85,13 @@ impl KeyAgg {
         let hash2_fe: FE = ECScalar::from(&hash2);
         let a2 = other_pk.scalar_mul(&hash2_fe.get_element());
         let apk = a2.add_point(&(a1.get_element()));
-        KeyAgg { apk: apk, hash }
+        KeyAgg { apk, hash }
     }
 
-    pub fn key_aggregation_n(pks: &Vec<GE>, party_index: usize) -> KeyAgg {
+    pub fn key_aggregation_n(pks: &[GE], party_index: usize) -> KeyAgg {
         let bn_1 = BigInt::from(1);
         let x_coor_vec: Vec<BigInt> = (0..pks.len())
-            .into_iter()
+//            .into_iter()
             .map(|i| pks[i].x_coor())
             .collect();
         let hash_vec: Vec<BigInt> = x_coor_vec
@@ -100,8 +100,8 @@ impl KeyAgg {
                 let mut vec = Vec::new();
                 vec.push(&bn_1);
                 vec.push(pk);
-                for i in 0..pks.len() {
-                    vec.push(&x_coor_vec[i]);
+                for mpz in x_coor_vec.iter().take(pks.len()) {
+                    vec.push(mpz);
                 }
                 HSha256::create_hash(&vec)
             })
@@ -113,8 +113,7 @@ impl KeyAgg {
             .map(|(pk, hash)| {
                 let hash_t: FE = ECScalar::from(&hash);
                 let pki: GE = pk.clone();
-                let a_i = pki.scalar_mul(&hash_t.get_element());
-                a_i
+                pki.scalar_mul(&hash_t.get_element())
             })
             .collect();
 
@@ -153,7 +152,7 @@ impl EphemeralKey {
     pub fn create_from_private_key(x1: &KeyPair, message: &[u8]) -> EphemeralKey {
         let base_point: GE = ECPoint::generator();
         let hash_private_key_message =
-            HSha256::create_hash(&vec![&x1.private_key.to_big_int(), &BigInt::from(message)]);
+            HSha256::create_hash(&[&x1.private_key.to_big_int(), &BigInt::from(message)]);
         let ephemeral_private_key: FE = ECScalar::from(&hash_private_key_message);
         let ephemeral_public_key = base_point.scalar_mul(&ephemeral_private_key.get_element());
         let (commitment, blind_factor) =
@@ -180,16 +179,16 @@ impl EphemeralKey {
         r1.add_point(&r2.get_element())
     }
 
-    pub fn hash_0(r_hat: &GE, apk: &GE, message: &[u8], musig_bit: &bool) -> BigInt {
-        if *musig_bit {
-            HSha256::create_hash(&vec![
+    pub fn hash_0(r_hat: &GE, apk: &GE, message: &[u8], musig_bit: bool) -> BigInt {
+        if musig_bit {
+            HSha256::create_hash(&[
                 &BigInt::from(0),
                 &r_hat.x_coor(),
                 &apk.bytes_compressed_to_big_int(),
                 &BigInt::from(message),
             ])
         } else {
-            HSha256::create_hash(&vec![
+            HSha256::create_hash(&[
                 &r_hat.x_coor(),
                 &apk.bytes_compressed_to_big_int(),
                 &BigInt::from(message),
@@ -225,27 +224,25 @@ impl EphemeralKey {
 pub fn verify(
     signature: &BigInt,
     r_x: &BigInt,
-    apk: GE,
+    apk: &GE,
     message: &[u8],
-    musig_bit: &bool,
+    musig_bit: bool,
 ) -> Result<(), ProofError> {
     let base_point: GE = ECPoint::generator();
     let curve_order = FE::q();
-    let c;
-    if *musig_bit {
-        c = HSha256::create_hash(&vec![
-            &BigInt::from(0),
-            &r_x,
-            &apk.bytes_compressed_to_big_int(),
-            &BigInt::from(message),
-        ]);
-    } else {
-        c = HSha256::create_hash(&vec![
+
+    let c= if musig_bit { HSha256::create_hash(&[
+        &BigInt::from(0),
+        &r_x,
+        &apk.bytes_compressed_to_big_int(),
+        &BigInt::from(message),
+    ]) } else {
+        HSha256::create_hash(&[
             r_x,
             &apk.bytes_compressed_to_big_int(),
             &BigInt::from(message),
-        ]);
-    }
+        ]) };
+
     let minus_c = BigInt::mod_sub(&curve_order, &c, &curve_order);
     let minus_c_fe: FE = ECScalar::from(&minus_c);
     let signature_fe: FE = ECScalar::from(signature);
