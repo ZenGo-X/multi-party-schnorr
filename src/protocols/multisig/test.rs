@@ -17,9 +17,9 @@
 #[cfg(test)]
 mod tests {
     use cryptography_utils::cryptographic_primitives::hashing::merkle_tree::MT256;
-    use protocols::multisig::{partial_sign, verify, EphKey, Keys, Signature};
-    use cryptography_utils::FE;
     use cryptography_utils::elliptic::curves::traits::ECScalar;
+    use cryptography_utils::FE;
+    use protocols::multisig::{partial_sign, verify, EphKey, Keys, Signature};
 
     #[test]
     fn two_party_key_gen() {

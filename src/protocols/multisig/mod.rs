@@ -59,7 +59,7 @@ impl KeyPair {
         }
     }
 
-    pub fn update_key_pair(&mut self, to_add: FE ) {
+    pub fn update_key_pair(&mut self, to_add: FE) {
         self.private_key = to_add + &self.private_key;
         let g: GE = ECPoint::generator();
         self.public_key = g * &self.private_key;
@@ -76,7 +76,7 @@ impl Keys {
     pub fn create_from_private_keys(priv_I: FE, priv_X: FE) -> Keys {
         let I = KeyPair::create_from_private_key(priv_I);
         let X = KeyPair::create_from_private_key(priv_X);
-        Keys { I, X}
+        Keys { I, X }
     }
 
     pub fn create_from(secret_share: FE) -> Keys {
@@ -84,7 +84,6 @@ impl Keys {
         let X = KeyPair::create();
         Keys { I, X }
     }
-
 
     pub fn create_signing_key(keys: &Keys, eph_key: &EphKey) -> Keys {
         Keys {
@@ -175,7 +174,9 @@ impl EphKey {
         let mut sig_vec_c = sig_vec;
         let first_sig = sig_vec_c.remove(0);
 
-        sig_vec_c.iter().fold(first_sig, |acc, x| acc.add(&x.get_element()))
+        sig_vec_c
+            .iter()
+            .fold(first_sig, |acc, x| acc.add(&x.get_element()))
     }
 }
 

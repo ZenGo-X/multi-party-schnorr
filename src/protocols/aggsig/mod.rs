@@ -90,9 +90,8 @@ impl KeyAgg {
 
     pub fn key_aggregation_n(pks: &[GE], party_index: usize) -> KeyAgg {
         let bn_1 = BigInt::from(1);
-        let x_coor_vec: Vec<BigInt> = (0..pks.len())
-            .map(|i| pks[i].x_coor())
-            .collect();
+        let x_coor_vec: Vec<BigInt> = pks.iter().map(|pk| pk.x_coor()).collect();
+
         let hash_vec: Vec<BigInt> = x_coor_vec
             .iter()
             .map(|pk| {
@@ -106,7 +105,7 @@ impl KeyAgg {
             })
             .collect();
 
-        let apk_vec: Vec<GE> = pks
+        let mut apk_vec: Vec<GE> = pks
             .iter()
             .zip(&hash_vec)
             .map(|(pk, hash)| {
@@ -116,9 +115,8 @@ impl KeyAgg {
             })
             .collect();
 
-        let mut apk_vec_2_n = apk_vec.clone();
-        let pk1 = apk_vec_2_n.remove(0);
-        let sum = apk_vec_2_n
+        let pk1 = apk_vec.remove(0);
+        let sum = apk_vec
             .iter()
             .fold(pk1, |acc, pk| acc.add_point(&pk.get_element()));
 
@@ -230,17 +228,20 @@ pub fn verify(
     let base_point: GE = ECPoint::generator();
     let curve_order = FE::q();
 
-    let c= if musig_bit { HSha256::create_hash(&[
-        &BigInt::from(0),
-        &r_x,
-        &apk.bytes_compressed_to_big_int(),
-        &BigInt::from(message),
-    ]) } else {
+    let c = if musig_bit {
+        HSha256::create_hash(&[
+            &BigInt::from(0),
+            &r_x,
+            &apk.bytes_compressed_to_big_int(),
+            &BigInt::from(message),
+        ])
+    } else {
         HSha256::create_hash(&[
             r_x,
             &apk.bytes_compressed_to_big_int(),
             &BigInt::from(message),
-        ]) };
+        ])
+    };
 
     let minus_c = BigInt::mod_sub(&curve_order, &c, &curve_order);
     let minus_c_fe: FE = ECScalar::from(&minus_c);
