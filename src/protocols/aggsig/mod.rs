@@ -66,7 +66,7 @@ pub struct KeyAgg {
 }
 
 impl KeyAgg {
-    pub fn key_aggregation(my_pk: &GE, other_pk: &GE) -> KeyAgg {
+    pub fn key_aggregation(my_pk: GE, other_pk: GE) -> KeyAgg {
         let hash = HSha256::create_hash(&vec![
             &BigInt::from(1),
             &my_pk.x_coor(),
@@ -74,8 +74,7 @@ impl KeyAgg {
             &other_pk.x_coor(),
         ]);
         let hash_fe: FE = ECScalar::from(&hash);
-        let pk1 = my_pk.clone();
-        let a1 = pk1.scalar_mul(&hash_fe.get_element());
+        let a1 = my_pk.scalar_mul(&hash_fe.get_element());
 
         let hash2 = HSha256::create_hash(&vec![
             &BigInt::from(1),
@@ -84,8 +83,7 @@ impl KeyAgg {
             &other_pk.x_coor(),
         ]);
         let hash2_fe: FE = ECScalar::from(&hash2);
-        let pk2 = other_pk.clone();
-        let a2 = pk2.scalar_mul(&hash2_fe.get_element());
+        let a2 = other_pk.scalar_mul(&hash2_fe.get_element());
         let apk = a2.add_point(&(a1.get_element()));
         KeyAgg { apk: apk, hash }
     }
@@ -128,7 +126,7 @@ impl KeyAgg {
 
         KeyAgg {
             apk: sum,
-            hash: hash_vec[*party_index].clone(),
+            hash: hash_vec[*party_index],
         }
     }
 }
@@ -212,9 +210,9 @@ impl EphemeralKey {
         )
     }
 
-    pub fn add_signature_parts(s1: &BigInt, s2: &BigInt, r_tag: &GE) -> (BigInt, BigInt) {
+    pub fn add_signature_parts(s1: BigInt, s2: &BigInt, r_tag: &GE) -> (BigInt, BigInt) {
         if *s2 == BigInt::from(0) {
-            (r_tag.x_coor(), s1.clone())
+            (r_tag.x_coor(), s1)
         } else {
             let s1_fe: FE = ECScalar::from(&s1);
             let s2_fe: FE = ECScalar::from(&s2);
@@ -227,7 +225,7 @@ impl EphemeralKey {
 pub fn verify(
     signature: &BigInt,
     r_x: &BigInt,
-    apk: &GE,
+    apk: GE,
     message: &[u8],
     musig_bit: &bool,
 ) -> Result<(), ProofError> {
@@ -252,8 +250,7 @@ pub fn verify(
     let minus_c_fe: FE = ECScalar::from(&minus_c);
     let signature_fe: FE = ECScalar::from(signature);
     let sG = base_point.scalar_mul(&signature_fe.get_element());
-    let apk_c: GE = apk.clone();
-    let cY = apk_c.scalar_mul(&minus_c_fe.get_element());
+    let cY = apk.scalar_mul(&minus_c_fe.get_element());
     let sG = sG.add_point(&cY.get_element());
     if sG.x_coor().to_hex() == *r_x.to_hex() {
         Ok(())

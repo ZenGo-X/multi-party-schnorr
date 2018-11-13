@@ -49,36 +49,32 @@ impl KeyPair {
         }
     }
 
-    pub fn create_from_private_key(secret_share: &FE) -> KeyPair {
+    pub fn create_from_private_key(private_key: FE) -> KeyPair {
         let g: GE = ECPoint::generator();
         let public_key = g * secret_share;
 
         KeyPair {
             public_key,
-            private_key: secret_share.clone(),
+            private_key,
         }
     }
 
-    pub fn update_key_pair(&self, to_add: &FE ) -> KeyPair {
-        let new_priv = self.private_key.clone() + to_add;
+    pub fn update_key_pair(&mut self, to_add: &FE ) {
+        self.private_key = self.private_key + to_add;
         let g: GE = ECPoint::generator();
-        let new_pub = g * &new_priv;
-        KeyPair{
-            private_key: new_priv,
-            public_key:  new_pub,
-        }
+        self.public_key = g * &new_priv;
     }
 }
 
 impl Keys {
-    //TODO:: add create from private key
     pub fn create() -> Keys {
         let I = KeyPair::create();
         let X = KeyPair::create();
         Keys { I, X }
     }
 
-    pub fn create_from(secret_share: &FE) -> Keys {
+
+    pub fn create_from(secret_share: FE) -> Keys {
         let I = KeyPair::create_from_private_key(secret_share);
         let X = KeyPair::create();
         Keys { I, X }
@@ -92,8 +88,8 @@ impl Keys {
         }
     }
 
-    pub fn broadcast(keys: &Keys) -> Vec<GE> {
-        return vec![keys.I.public_key.clone(), keys.X.public_key.clone()];
+    pub fn broadcast(keys: Keys) -> Vec<GE> {
+        return vec![keys.I.public_key, keys.X.public_key];
     }
 
     pub fn collect_and_compute_challenge(ix_vec: &Vec<Vec<GE>>) -> FE {
@@ -107,8 +103,8 @@ impl Keys {
     }
 }
 
-pub fn partial_sign(keys: &Keys, e: &FE) -> FE {
-    e.clone() * &keys.I.private_key + &keys.X.private_key
+pub fn partial_sign(keys: &Keys, e: FE) -> FE {
+    e * &keys.I.private_key + &keys.X.private_key
 }
 
 pub fn verify<'a>(I: &GE, sig: &Signature, e: &FE) -> Result<(), &'a str> {
@@ -165,15 +161,15 @@ impl EphKey {
         let m_ge = base_point.scalar_mul(&m_fe.get_element());
         let input = vec![&sum_pub_eph, &m_ge, &sum_pub];
         let e = multisig::hash_4(&input);
-        (sum_pub.clone(), sum_pub_eph.clone(), e)
+        (sum_pub, sum_pub_eph, e)
     }
 
-    pub fn partial_sign(&self, local_keys: &KeyPair, es: &FE) -> FE {
-        es.clone() * &local_keys.private_key + &self.eph_key_pair.private_key
+    pub fn partial_sign(&self, local_keys: &KeyPair, es: FE) -> FE {
+        es * &local_keys.private_key + &self.eph_key_pair.private_key
     }
 
-    pub fn add_signature_parts(sig_vec: &Vec<FE>) -> FE {
-        let mut sig_vec_c = sig_vec.clone();
+    pub fn add_signature_parts(sig_vec: Vec<FE>) -> FE {
+        let mut sig_vec_c = sig_vec;
         let first_sig = sig_vec_c.remove(0);
         let sum_sig = sig_vec_c
             .iter()
