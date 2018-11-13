@@ -11,4 +11,7 @@ crate-type = ["lib"]
 
 [dependencies]
 cryptography-utils = { git = "https://github.com/KZen-networks/cryptography-utils" ,  features =  ["curvesecp256k1"]}
+
+
+[dev-dependencies]
 hex = "0.3.2"
