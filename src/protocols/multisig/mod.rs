@@ -73,6 +73,11 @@ impl Keys {
         Keys { I, X }
     }
 
+    pub fn create_from_private_keys(priv_I: FE, priv_X: FE) -> Keys {
+        let I = KeyPair::create_from_private_key(priv_I);
+        let X = KeyPair::create_from_private_key(priv_X);
+        Keys { I, X}
+    }
 
     pub fn create_from(secret_share: FE) -> Keys {
         let I = KeyPair::create_from_private_key(secret_share);
