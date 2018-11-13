@@ -88,7 +88,7 @@ impl KeyAgg {
         KeyAgg { apk: apk, hash }
     }
 
-    pub fn key_aggregation_n(pks: &Vec<GE>, party_index: &usize) -> KeyAgg {
+    pub fn key_aggregation_n(pks: &Vec<GE>, party_index: usize) -> KeyAgg {
         let bn_1 = BigInt::from(1);
         let x_coor_vec: Vec<BigInt> = (0..pks.len())
             .into_iter()
@@ -126,7 +126,7 @@ impl KeyAgg {
 
         KeyAgg {
             apk: sum,
-            hash: hash_vec[*party_index],
+            hash: hash_vec[party_index].clone(),
         }
     }
 }

@@ -55,8 +55,8 @@ mod tests {
         let mut pks: Vec<GE> = Vec::new();
         pks.push(party1_key.public_key.clone());
         pks.push(party2_key.public_key.clone());
-        let party1_key_agg = KeyAgg::key_aggregation_n(&pks, &0);
-        let party2_key_agg = KeyAgg::key_aggregation_n(&pks, &1);
+        let party1_key_agg = KeyAgg::key_aggregation_n(&pks, 0);
+        let party2_key_agg = KeyAgg::key_aggregation_n(&pks, 1);
         assert_eq!(party1_key_agg.apk, party2_key_agg.apk);
 
         // compute R' = R1+R2:
@@ -94,10 +94,10 @@ mod tests {
         );
 
         // signature s:
-        let (r, s) = EphemeralKey::add_signature_parts(&s1, &s2, &party1_r_tag);
+        let (r, s) = EphemeralKey::add_signature_parts(s1, &s2, &party1_r_tag);
 
         // verify:
-        assert!(verify(&s, &r, &party1_key_agg.apk, &message, &is_musig,).is_ok())
+        assert!(verify(&s, &r, party1_key_agg.apk, &message, &is_musig,).is_ok())
     }
 
     #[test]
@@ -124,13 +124,13 @@ mod tests {
 
         // signature s:
         let (R, s) = EphemeralKey::add_signature_parts(
-            &s_tag,
+            s_tag,
             &BigInt::from(0),
             &party1_ephemeral_key.keypair.public_key,
         );
 
         // verify:
-        assert!(verify(&s, &R, &party1_key.public_key, &message, &is_musig).is_ok())
+        assert!(verify(&s, &R, party1_key.public_key, &message, &is_musig).is_ok())
     }
 
     #[test]
@@ -165,7 +165,7 @@ mod tests {
 
         // signature s:
         let (R, s) = EphemeralKey::add_signature_parts(
-            &s_tag,
+            s_tag,
             &BigInt::from(0),
             &party1_ephemeral_key.keypair.public_key,
         );
@@ -179,6 +179,6 @@ mod tests {
         assert_eq!(test_vector_R, sig_R);
         assert_eq!(test_vector_s, sig_s);
         // verify:
-        assert!(verify(&s, &R, &party1_key.public_key, &message, &is_musig).is_ok())
+        assert!(verify(&s, &R, party1_key.public_key, &message, &is_musig).is_ok())
     }
 }

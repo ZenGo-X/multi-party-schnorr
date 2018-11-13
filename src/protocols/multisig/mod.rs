@@ -51,7 +51,7 @@ impl KeyPair {
 
     pub fn create_from_private_key(private_key: FE) -> KeyPair {
         let g: GE = ECPoint::generator();
-        let public_key = g * secret_share;
+        let public_key = g * &private_key;
 
         KeyPair {
             public_key,
@@ -59,10 +59,10 @@ impl KeyPair {
         }
     }
 
-    pub fn update_key_pair(&mut self, to_add: &FE ) {
-        self.private_key = self.private_key + to_add;
+    pub fn update_key_pair(&mut self, to_add: FE ) {
+        self.private_key = to_add + &self.private_key;
         let g: GE = ECPoint::generator();
-        self.public_key = g * &new_priv;
+        self.public_key = g * &self.private_key;
     }
 }
 
@@ -98,13 +98,12 @@ impl Keys {
     }
 
     pub fn collect_and_compute_challenge(ix_vec: &Vec<Vec<GE>>) -> FE {
-        let new_vec: Vec<GE> = Vec::new();
-        let concat_vec = ix_vec.iter().fold(new_vec, |mut acc, x| {
+        let concat_vec = ix_vec.iter().fold(Vec::new(), |mut acc, x| {
             acc.extend_from_slice(x);
             acc
         });
-        let ref_vec = (0..concat_vec.len()).map(|i| &concat_vec[i]).collect::<Vec<&GE>>();
-        multisig::hash_4(&ref_vec)
+        let ref_vec = concat_vec.iter().collect::<Vec<&GE>>();
+        multisig::hash_4(&ref_vec[..])
     }
 }
 
@@ -164,8 +163,7 @@ impl EphKey {
         let m_fe: FE = ECScalar::from(&BigInt::from(message));
         let base_point: GE = GE::generator();
         let m_ge = base_point.scalar_mul(&m_fe.get_element());
-        let input = vec![&sum_pub_eph, &m_ge, &sum_pub];
-        let e = multisig::hash_4(&input);
+        let e = multisig::hash_4(&[&sum_pub_eph, &m_ge, &sum_pub]);
         (sum_pub, sum_pub_eph, e)
     }
 

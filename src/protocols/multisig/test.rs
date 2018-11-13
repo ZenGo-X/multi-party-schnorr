@@ -26,18 +26,18 @@ mod tests {
         let message: [u8; 4] = [79, 77, 69, 82];
         // party1 key gen:
         let keys_1 = Keys::create();
+        // This is useless. but I don't want to change it. was this supposed to really update the value? if so the .clone() needs to be removed
+        keys_1.clone().I.update_key_pair(FE::zero());
 
-        let _ = keys_1.I.update_key_pair(&FE::zero());
-
-        let broadcast1 = Keys::broadcast(&keys_1);
+        let broadcast1 = Keys::broadcast(keys_1.clone());
         // party2 key gen:
         let keys_2 = Keys::create();
-        let broadcast2 = Keys::broadcast(&keys_2);
+        let broadcast2 = Keys::broadcast(keys_2.clone());
         let ix_vec = vec![broadcast1, broadcast2];
         let e = Keys::collect_and_compute_challenge(&ix_vec);
 
-        let y1 = partial_sign(&keys_1, &e);
-        let y2 = partial_sign(&keys_2, &e);
+        let y1 = partial_sign(&keys_1, e.clone());
+        let y2 = partial_sign(&keys_2, e.clone());
         let sig1 = Signature::set_signature(&keys_1.X.public_key, &y1);
         let sig2 = Signature::set_signature(&keys_2.X.public_key, &y2);
         // partial verify
@@ -66,9 +66,9 @@ mod tests {
 
         let (It, Xt, es) = EphKey::compute_joint_comm_e(pub_key_vec, eph_pub_key_vec, &message);
 
-        let y1 = party1_com.partial_sign(&keys_1.I, &es);
-        let y2 = party2_com.partial_sign(&keys_2.I, &es);
-        let y = EphKey::add_signature_parts(&vec![y1, y2]);
+        let y1 = party1_com.partial_sign(&keys_1.I, es.clone());
+        let y2 = party2_com.partial_sign(&keys_2.I, es.clone());
+        let y = EphKey::add_signature_parts(vec![y1, y2]);
         let sig = Signature::set_signature(&Xt, &y);
         assert!(verify(&It, &sig, &es).is_ok());
 
