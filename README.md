@@ -5,7 +5,7 @@ Threshold Schnorr signatures
 =====================================
 Currently supporting two protocols: 
 * Aggragated Signatures:  {n,n} scheme based on https://eprint.iacr.org/2018/068.pdf and the scheme for discrete-logs (section 5) from https://eprint.iacr.org/2018/483.pdf  
-* Multi-signature scheme based on  Micali-Ohta-Reyzin: Accountable-Subgroup Multisignatures: https://pdfs.semanticscholar.org/6bf4/f9450e7a8e31c106a8670b961de4735589cf.pdf
+* Multi-signature scheme based on  Micali-Ohta-Reyzin: Accountable-Subgroup Multisignatures: https://pdfs.semanticscholar.org/6bf4/f9450e7a8e31c106a8670b961de4735589cf.pdf. This code is being used currently in: https://github.com/KZen-networks/kms-secp256k1 for 2p-schnorr for crypto-wallet.
 
 The implementations are _bip-schnorr_ compatible (https://github.com/sipa/bips/blob/bip-schnorr/bip-schnorr.mediawiki)
 
