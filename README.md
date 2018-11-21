@@ -19,7 +19,7 @@ The library is released under the terms of the GPL-3.0 license. See [LICENSE](LI
 
 Development Process
 -------------------
-The contribution workflow is described in [CONTRIBUTING.md](CONTRIBUTING.md).
+This contribution workflow is described in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Contact
 -------------------
