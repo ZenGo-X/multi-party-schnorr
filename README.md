@@ -15,7 +15,7 @@ A wiki is available here: https://github.com/KZen-networks/multisig-schnorr/wiki
 
 License
 -------
-Multisig Schnorr is released under the terms of the GPL-3.0 license. See [LICENSE](LICENSE) for more information.
+The library is released under the terms of the GPL-3.0 license. See [LICENSE](LICENSE) for more information.
 
 Development Process
 -------------------
