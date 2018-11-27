@@ -11,7 +11,8 @@ Currently supporting two protocols:
 
 * A wiki is available here: https://github.com/KZen-networks/multisig-schnorr/wiki.
 
-**Disclaimer**: 
+**Disclaimers**: 
+
 (1) This code should not be used for production at the moment.
 
 (2) This code is not secure against side-channel attacks
