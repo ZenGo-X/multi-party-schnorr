@@ -13,9 +13,6 @@ Disclaimer: (1) This code should not be used for production at the moment. (2) T
 
 A wiki is available here: https://github.com/KZen-networks/multisig-schnorr/wiki.
 
-License
--------
-The library is released under the terms of the GPL-3.0 license. See [LICENSE](LICENSE) for more information.
 
 Development Process
 -------------------
@@ -24,3 +21,7 @@ This contribution workflow is described in [CONTRIBUTING.md](CONTRIBUTING.md).
 Contact
 -------------------
 For any questions, feel free to [email us](mailto:github@kzencorp.com).
+
+License
+-------
+The library is released under the terms of the GPL-3.0 license. See [LICENSE](LICENSE) for more information.
