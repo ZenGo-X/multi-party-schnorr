@@ -8,7 +8,7 @@ Multi Party Schnorr Signatures
 
 * The implementations aim to be [_bip-schnorr_](https://github.com/sipa/bips/blob/bip-schnorr/bip-schnorr.mediawiki) compatible.
 
-* [Wiki](https://github.com/KZen-networks/multisig-schnorr/wiki).
+* [Paper List](https://github.com/KZen-networks/multi-party-schnorr/tree/master/papers), [Wiki](https://github.com/KZen-networks/multisig-schnorr/wiki).
 
 **Disclaimers**: 
 
