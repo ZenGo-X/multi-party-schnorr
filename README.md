@@ -19,7 +19,8 @@ Multi Party Schnorr Signatures
 Get Started
 =====================================
 
-[schnorr_bip_test_vector_2] (https://github.com/KZen-networks/multi-party-schnorr/blob/master/src/protocols/aggsig/test.rs#L137)
+[schnorr_bip_test_vector_2](https://github.com/KZen-networks/multi-party-schnorr/blob/master/src/protocols/aggsig/test.rs#L137)
+
 [schnorr_two_party_signing](https://github.com/KZen-networks/multi-party-schnorr/blob/master/src/protocols/aggsig/test.rs#L26)
 
 Development Process
