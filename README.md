@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.com/KZen-networks/multi-party-schnorr.svg?branch=master)](https://travis-ci.com/KZen-networks/multi-party-schnorr)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-MUulti Party Schnorr Signatures
+Multi Party Schnorr Signatures
 =====================================
 * This library supports Aggragated Signatures:  {n,n} scheme based on [simple_schnorr_multi_signatures_with_applications_to_bitcoin](https://github.com/KZen-networks/multi-party-schnorr/blob/master/papers/simple_schnorr_multi_signatures_with_applications_to_bitcoin.pdf) and the scheme for discrete-logs (section 5) from [compact_multi_signatures_for_smaller_blockchains](https://github.com/KZen-networks/multi-party-schnorr/blob/master/papers/compact_multi_signatures_for_smaller_blockchains.pdf) 
 * This library supports Multi-signature scheme based on  Micali-Ohta-Reyzin: [Accountable-Subgroup Multisignatures](https://github.com/KZen-networks/multi-party-schnorr/blob/master/papers/accountable_subgroups_multisignatures.pdf). This code is being used currently  for [2p-Schnorr key management](https://github.com/KZen-networks/kms-secp256k1 ).
@@ -15,6 +15,12 @@ MUulti Party Schnorr Signatures
 (1) This code should not be used for production at the moment.
 
 (2) This code is not secure against side-channel attacks
+
+Get Started
+=====================================
+
+[schnorr_bip_test_vector_2] (https://github.com/KZen-networks/multi-party-schnorr/blob/master/src/protocols/aggsig/test.rs#L137)
+[schnorr_two_party_signing](https://github.com/KZen-networks/multi-party-schnorr/blob/master/src/protocols/aggsig/test.rs#L26)
 
 Development Process
 -------------------
