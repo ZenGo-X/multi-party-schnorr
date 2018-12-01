@@ -18,11 +18,11 @@
 //! Schnorr {n,n}-Signatures based on Accountable-Subgroup Multisignatures
 //!
 //See (https://pdfs.semanticscholar.org/6bf4/f9450e7a8e31c106a8670b961de4735589cf.pdf)
-use cryptography_utils::elliptic::curves::traits::*;
-use cryptography_utils::{BigInt, FE, GE};
+use curv::elliptic::curves::traits::*;
+use curv::{BigInt, FE, GE};
 
-use cryptography_utils::cryptographic_primitives::hashing::hash_sha256::HSha256;
-use cryptography_utils::cryptographic_primitives::hashing::traits::*;
+use curv::cryptographic_primitives::hashing::hash_sha256::HSha256;
+use curv::cryptographic_primitives::hashing::traits::*;
 use protocols::multisig;
 
 // I is a private key and public key keypair, X is a commitment of the form X = xG used only in key generation (see p11 in the paper)

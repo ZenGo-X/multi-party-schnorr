@@ -1,3 +1,4 @@
+#![allow(non_snake_case)]
 /*
     Multisig Schnorr
 
@@ -13,14 +14,3 @@
 
     @license GPL-3.0+ <https://github.com/KZen-networks/multisig-schnorr/blob/master/LICENSE>
 */
-
-extern crate curv;
-pub mod protocols;
-
-#[derive(Copy, PartialEq, Eq, Clone, Debug)]
-pub enum Error {
-    InvalidKey,
-    InvalidSS,
-    InvalidCom,
-    InvalidSig,
-}

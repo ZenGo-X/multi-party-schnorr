@@ -18,18 +18,18 @@
 //! aggregated Schnorr {n,n}-Signatures
 //!
 //! See https://eprint.iacr.org/2018/068.pdf, https://eprint.iacr.org/2018/483.pdf subsection 5.1
-use cryptography_utils::{BigInt, FE, GE};
+use curv::{BigInt, FE, GE};
 
-use cryptography_utils::cryptographic_primitives::proofs::*;
-use cryptography_utils::elliptic::curves::traits::*;
+use curv::cryptographic_primitives::proofs::*;
+use curv::elliptic::curves::traits::*;
 
-use cryptography_utils::cryptographic_primitives::hashing::hash_sha256::HSha256;
-use cryptography_utils::cryptographic_primitives::hashing::traits::*;
+use curv::cryptographic_primitives::hashing::hash_sha256::HSha256;
+use curv::cryptographic_primitives::hashing::traits::*;
 
-use cryptography_utils::arithmetic::traits::Converter;
-use cryptography_utils::arithmetic::traits::Modulo;
-use cryptography_utils::cryptographic_primitives::commitments::hash_commitment::HashCommitment;
-use cryptography_utils::cryptographic_primitives::commitments::traits::*;
+use curv::arithmetic::traits::Converter;
+use curv::arithmetic::traits::Modulo;
+use curv::cryptographic_primitives::commitments::hash_commitment::HashCommitment;
+use curv::cryptographic_primitives::commitments::traits::*;
 
 #[derive(Debug)]
 pub struct KeyPair {
@@ -249,6 +249,25 @@ pub fn verify(
     let sG = base_point.scalar_mul(&signature_fe.get_element());
     let cY = apk.scalar_mul(&minus_c_fe.get_element());
     let sG = sG.add_point(&cY.get_element());
+    if sG.x_coor().to_hex() == *r_x.to_hex() {
+        Ok(())
+    } else {
+        Err(ProofError)
+    }
+}
+
+pub fn verify_partial(
+    signature: &FE,
+    r_x: &BigInt,
+    c: &FE,
+    a: &FE,
+    key_pub: &GE,
+) -> Result<(), ProofError> {
+    let g: GE = ECPoint::generator();
+    let sG = g * signature;
+    let cY = key_pub * a * c;
+    let sG = sG.sub_point(&cY.get_element());
+
     if sG.x_coor().to_hex() == *r_x.to_hex() {
         Ok(())
     } else {

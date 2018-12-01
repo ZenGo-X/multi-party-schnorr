@@ -16,18 +16,18 @@
 
 #[cfg(test)]
 mod tests {
-    use cryptography_utils::cryptographic_primitives::hashing::merkle_tree::MT256;
-    use cryptography_utils::elliptic::curves::traits::ECScalar;
-    use cryptography_utils::FE;
+    use curv::cryptographic_primitives::hashing::merkle_tree::MT256;
+    use curv::elliptic::curves::traits::ECScalar;
+    use curv::FE;
     use protocols::multisig::{partial_sign, verify, EphKey, Keys, Signature};
 
     #[test]
     fn two_party_key_gen() {
         let message: [u8; 4] = [79, 77, 69, 82];
         // party1 key gen:
-        let keys_1 = Keys::create();
-        // This is useless. but I don't want to change it. was this supposed to really update the value? if so the .clone() needs to be removed
-        keys_1.clone().I.update_key_pair(FE::zero());
+        let mut keys_1 = Keys::create();
+
+        keys_1.I.update_key_pair(FE::zero());
 
         let broadcast1 = Keys::broadcast(keys_1.clone());
         // party2 key gen:

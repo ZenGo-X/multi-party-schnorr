@@ -17,10 +17,11 @@
 
 #[cfg(test)]
 mod tests {
-    use cryptography_utils::BigInt;
-    use cryptography_utils::GE;
-    use protocols::aggsig::{verify, EphemeralKey, KeyAgg, KeyPair};
+    use curv::BigInt;
+    use curv::GE;
+    use protocols::aggsig::{verify, verify_partial, EphemeralKey, KeyAgg, KeyPair};
     extern crate hex;
+    use curv::elliptic::curves::traits::*;
 
     #[test]
     fn test_multiparty_signing_for_two_parties() {
@@ -93,6 +94,15 @@ mod tests {
             &party2_key_agg.hash,
         );
 
+        let r = party1_ephemeral_key.keypair.public_key.x_coor();
+        assert!(verify_partial(
+            &ECScalar::from(&s1),
+            &r,
+            &ECScalar::from(&party1_h_0),
+            &ECScalar::from(&party1_key_agg.hash),
+            &party1_key.public_key
+        )
+        .is_ok());
         // signature s:
         let (r, s) = EphemeralKey::add_signature_parts(s1, &s2, &party1_r_tag);
 

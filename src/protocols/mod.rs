@@ -17,3 +17,6 @@
 pub mod aggsig;
 //Schnorr {n,n}-Signatures based on Accountable-Subgroup Multisignatures (https://pdfs.semanticscholar.org/6bf4/f9450e7a8e31c106a8670b961de4735589cf.pdf)
 pub mod multisig;
+// {t,n}- Signatures based on Provable Secure Distributed Schnorr Signatures
+// ( https://github.com/KZen-networks/multi-party-schnorr/blob/master/papers/provably_secure_distributed_schnorr_signatures_and_a_threshold_scheme.pdf)
+pub mod thresholdsig;
