@@ -70,7 +70,7 @@ fn test_t2_n5_sign_with_4() {
     let (_priv_keys_vec, priv_shared_keys_vec, Y, key_gen_vss_vec) =
         keygen_t_n_parties(t.clone(), n.clone(), &key_gen_parties_points_vec);
     /// signing:
-    let parties_index_vec: [usize; 4] = [1, 0, 2, 3];
+    let parties_index_vec: [usize; 4] = [0, 1, 3, 4];
     let parties_points_vec = (0..parties_index_vec.len())
         .map(|i| parties_index_vec[i].clone() + 1)
         .collect::<Vec<usize>>();
