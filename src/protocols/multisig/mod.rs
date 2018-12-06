@@ -117,7 +117,7 @@ pub fn verify<'a>(I: &GE, sig: &Signature, e: &FE) -> Result<(), &'a str> {
     let yG = base_point * y;
     let eI = I * e;
     let X_plus_eI = X + &eI;
-    if yG.get_element() == X_plus_eI.get_element() {
+    if yG == X_plus_eI {
         Ok(())
     } else {
         Err("error verification")
