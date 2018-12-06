@@ -207,9 +207,7 @@ impl LocalSig {
         let comm_vec = (0..vss_private_keys[0].parameters.threshold + 1)
             .map(|i| {
                 let mut key_gen_comm_i_vec = (0..vss_private_keys.len())
-                    .map(|j| {
-                        vss_private_keys[j].commitments[i].clone() * &gamma_vec[i].e
-                    })
+                    .map(|j| vss_private_keys[j].commitments[i].clone() * &gamma_vec[i].e)
                     .collect::<Vec<GE>>();
                 let mut eph_comm_i_vec = (0..vss_ephemeral_keys.len())
                     .map(|j| vss_ephemeral_keys[j].commitments[i].clone())
