@@ -21,6 +21,8 @@
 use curv::elliptic::curves::traits::*;
 use curv::{BigInt, FE, GE};
 
+use centipede::juggling::proof_system::{Helgamalsegmented, Witness};
+use centipede::juggling::segmentation::Msegmentation;
 use curv::cryptographic_primitives::hashing::hash_sha256::HSha256;
 use curv::cryptographic_primitives::hashing::traits::*;
 use protocols::multisig;
@@ -103,6 +105,22 @@ impl Keys {
         });
         let ref_vec = concat_vec.iter().collect::<Vec<&GE>>();
         multisig::hash_4(&ref_vec[..])
+    }
+
+    pub fn to_encrypted_segment(
+        &self,
+        segment_size: &usize,
+        num_of_segments: usize,
+        pub_ke_y: &GE,
+        g: &GE,
+    ) -> (Witness, Helgamalsegmented) {
+        Msegmentation::to_encrypted_segments(
+            &self.I.private_key,
+            &segment_size,
+            num_of_segments,
+            pub_ke_y,
+            g,
+        )
     }
 }
 
