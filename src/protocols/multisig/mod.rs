@@ -66,6 +66,22 @@ impl KeyPair {
         let g: GE = ECPoint::generator();
         self.public_key = g * &self.private_key;
     }
+
+    pub fn to_encrypted_segment(
+        &self,
+        segment_size: &usize,
+        num_of_segments: usize,
+        pub_ke_y: &GE,
+        g: &GE,
+    ) -> (Witness, Helgamalsegmented) {
+        Msegmentation::to_encrypted_segments(
+            &self.private_key,
+            &segment_size,
+            num_of_segments,
+            pub_ke_y,
+            g,
+        )
+    }
 }
 
 impl Keys {
@@ -105,22 +121,6 @@ impl Keys {
         });
         let ref_vec = concat_vec.iter().collect::<Vec<&GE>>();
         multisig::hash_4(&ref_vec[..])
-    }
-
-    pub fn to_encrypted_segment(
-        &self,
-        segment_size: &usize,
-        num_of_segments: usize,
-        pub_ke_y: &GE,
-        g: &GE,
-    ) -> (Witness, Helgamalsegmented) {
-        Msegmentation::to_encrypted_segments(
-            &self.I.private_key,
-            &segment_size,
-            num_of_segments,
-            pub_ke_y,
-            g,
-        )
     }
 }
 
