@@ -15,3 +15,6 @@ curv = { git = "https://github.com/KZen-networks/curv" ,  features =  ["curvesec
 
 [dev-dependencies]
 hex = "0.3.2"
+
+[dependencies.centipede]
+git = "https://github.com/KZen-networks/centipede"
