@@ -90,7 +90,10 @@ impl KeyAgg {
 
     pub fn key_aggregation_n(pks: &[GE], party_index: usize) -> KeyAgg {
         let bn_1 = BigInt::from(1);
-        let x_coor_vec: Vec<BigInt> = pks.iter().map(|pk| pk.bytes_compressed_to_big_int()).collect();
+        let x_coor_vec: Vec<BigInt> = pks
+            .iter()
+            .map(|pk| pk.bytes_compressed_to_big_int())
+            .collect();
 
         let hash_vec: Vec<BigInt> = x_coor_vec
             .iter()
