@@ -69,18 +69,18 @@ impl KeyAgg {
     pub fn key_aggregation(my_pk: &GE, other_pk: &GE) -> KeyAgg {
         let hash = HSha256::create_hash(&[
             &BigInt::from(1),
-            &my_pk.x_coor(),
-            &my_pk.x_coor(),
-            &other_pk.x_coor(),
+            &my_pk.bytes_compressed_to_big_int(),
+            &my_pk.bytes_compressed_to_big_int(),
+            &other_pk.bytes_compressed_to_big_int(),
         ]);
         let hash_fe: FE = ECScalar::from(&hash);
         let a1 = my_pk.scalar_mul(&hash_fe.get_element());
 
         let hash2 = HSha256::create_hash(&[
             &BigInt::from(1),
-            &other_pk.x_coor(),
-            &my_pk.x_coor(),
-            &other_pk.x_coor(),
+            &other_pk.bytes_compressed_to_big_int(),
+            &my_pk.bytes_compressed_to_big_int(),
+            &other_pk.bytes_compressed_to_big_int(),
         ]);
         let hash2_fe: FE = ECScalar::from(&hash2);
         let a2 = other_pk.scalar_mul(&hash2_fe.get_element());
@@ -90,7 +90,7 @@ impl KeyAgg {
 
     pub fn key_aggregation_n(pks: &[GE], party_index: usize) -> KeyAgg {
         let bn_1 = BigInt::from(1);
-        let x_coor_vec: Vec<BigInt> = pks.iter().map(|pk| pk.x_coor()).collect();
+        let x_coor_vec: Vec<BigInt> = pks.iter().map(|pk| pk.bytes_compressed_to_big_int()).collect();
 
         let hash_vec: Vec<BigInt> = x_coor_vec
             .iter()
@@ -138,7 +138,7 @@ impl EphemeralKey {
     pub fn create() -> EphemeralKey {
         let keypair = KeyPair::create();
         let (commitment, blind_factor) =
-            HashCommitment::create_commitment(&keypair.public_key.x_coor());
+            HashCommitment::create_commitment(&keypair.public_key.bytes_compressed_to_big_int());
         EphemeralKey {
             keypair,
             commitment,
@@ -166,7 +166,7 @@ impl EphemeralKey {
 
     pub fn test_com(r_to_test: &GE, blind_factor: &BigInt, comm: &BigInt) -> bool {
         let computed_comm = &HashCommitment::create_commitment_with_user_defined_randomness(
-            &r_to_test.x_coor(),
+            &r_to_test.bytes_compressed_to_big_int(),
             blind_factor,
         );
         computed_comm == comm

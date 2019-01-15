@@ -66,7 +66,7 @@ impl Keys {
     pub fn phase1_broadcast(&self) -> (KeyGenBroadcastMessage1, BigInt) {
         let blind_factor = BigInt::sample(SECURITY);
         let com = HashCommitment::create_commitment_with_user_defined_randomness(
-            &self.y_i.x_coor(),
+            &self.y_i.bytes_compressed_to_big_int(),
             &blind_factor,
         );
         let bcm1 = KeyGenBroadcastMessage1 { com };
@@ -89,7 +89,7 @@ impl Keys {
         let correct_key_correct_decom_all = (0..bc1_vec.len())
             .map(|i| {
                 HashCommitment::create_commitment_with_user_defined_randomness(
-                    &y_vec[i].x_coor(),
+                    &y_vec[i].bytes_compressed_to_big_int(),
                     &blind_vec[i],
                 ) == bc1_vec[i].com
             })
@@ -176,7 +176,7 @@ impl LocalSig {
         let alpha_i = local_private_key.x_i.clone();
 
         let e_bn = HSha256::create_hash(&[
-            &local_ephemaral_key.y.x_coor(),
+            &local_ephemaral_key.y.bytes_compressed_to_big_int(),
             &local_private_key.y.bytes_compressed_to_big_int(),
             &BigInt::from(message),
         ]);
@@ -266,7 +266,7 @@ impl Signature {
 
     pub fn verify(&self, message: &[u8], pubkey_y: &GE) -> Result<(), Error> {
         let e_bn = HSha256::create_hash(&[
-            &self.v.x_coor(),
+            &self.v.bytes_compressed_to_big_int(),
             &pubkey_y.bytes_compressed_to_big_int(),
             &BigInt::from(message),
         ]);
