@@ -94,7 +94,7 @@ mod tests {
             &party2_key_agg.hash,
         );
 
-        let r = party1_ephemeral_key.keypair.public_key.x_coor();
+        let r = party1_ephemeral_key.keypair.public_key.x_coor().unwrap();
         assert!(verify_partial(
             &ECScalar::from(&s1),
             &r,
