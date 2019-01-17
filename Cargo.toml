@@ -13,7 +13,8 @@ crate-type = ["lib"]
 curv = { git = "https://github.com/KZen-networks/curv" ,  features =  ["curvesecp256k1"]}
 
 [dependencies.centipede]
-path = "../centipede"
+git = "https://github.com/KZen-networks/centipede"
+
 
 
 [dev-dependencies]
