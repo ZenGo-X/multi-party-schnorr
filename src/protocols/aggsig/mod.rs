@@ -27,7 +27,6 @@ use curv::cryptographic_primitives::hashing::hash_sha256::HSha256;
 use curv::cryptographic_primitives::hashing::traits::*;
 
 use curv::arithmetic::traits::Converter;
-use curv::arithmetic::traits::Modulo;
 use curv::cryptographic_primitives::commitments::hash_commitment::HashCommitment;
 use curv::cryptographic_primitives::commitments::traits::*;
 
@@ -197,16 +196,10 @@ impl EphemeralKey {
     }
 
     pub fn sign(r: &EphemeralKey, c: &BigInt, x: &KeyPair, a: &BigInt) -> BigInt {
-        let curve_order = FE::q();
-        BigInt::mod_add(
-            &r.keypair.private_key.to_big_int(),
-            &BigInt::mod_mul(
-                c,
-                &BigInt::mod_mul(&x.private_key.to_big_int(), a, &curve_order),
-                &curve_order,
-            ),
-            &curve_order,
-        )
+        let c_fe: FE = ECScalar::from(c);
+        let a_fe: FE = ECScalar::from(a);
+        let s_fe = r.keypair.private_key.clone() + (c_fe * x.private_key.clone() * a_fe);
+        s_fe.to_big_int()
     }
 
     pub fn add_signature_parts(s1: BigInt, s2: &BigInt, r_tag: &GE) -> (BigInt, BigInt) {
@@ -229,7 +222,6 @@ pub fn verify(
     musig_bit: bool,
 ) -> Result<(), ProofError> {
     let base_point: GE = ECPoint::generator();
-    let curve_order = FE::q();
 
     let c = if musig_bit {
         HSha256::create_hash(&[
@@ -246,13 +238,12 @@ pub fn verify(
         ])
     };
 
-    let minus_c = BigInt::mod_sub(&curve_order, &c, &curve_order);
-    let minus_c_fe: FE = ECScalar::from(&minus_c);
     let signature_fe: FE = ECScalar::from(signature);
     let sG = base_point.scalar_mul(&signature_fe.get_element());
-    let cY = apk.scalar_mul(&minus_c_fe.get_element());
-    let sG = sG.add_point(&cY.get_element());
-    if sG.x_coor().unwrap().to_hex() == *r_x.to_hex() {
+    let c: FE = ECScalar::from(&c);
+    let cY = apk.scalar_mul(&c.get_element());
+    let sG = sG.sub_point(&cY.get_element());
+    if sG.x_coor().unwrap().to_hex() == r_x.to_hex() {
         Ok(())
     } else {
         Err(ProofError)
@@ -270,7 +261,6 @@ pub fn verify_partial(
     let sG = g * signature;
     let cY = key_pub * a * c;
     let sG = sG.sub_point(&cY.get_element());
-
     if sG.x_coor().unwrap().to_hex() == *r_x.to_hex() {
         Ok(())
     } else {

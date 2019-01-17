@@ -95,6 +95,7 @@ mod tests {
         );
 
         let r = party1_ephemeral_key.keypair.public_key.x_coor().unwrap();
+
         assert!(verify_partial(
             &ECScalar::from(&s1),
             &r,
@@ -103,6 +104,7 @@ mod tests {
             &party1_key.public_key
         )
         .is_ok());
+
         // signature s:
         let (r, s) = EphemeralKey::add_signature_parts(s1, &s2, &party1_r_tag);
 
@@ -115,6 +117,7 @@ mod tests {
         let is_musig = false;
         let message: [u8; 4] = [79, 77, 69, 82];
         let party1_key = KeyPair::create();
+        // let party1_key = KeyPair::create_from_private_key(&BigInt::from(259));
         let party1_ephemeral_key = EphemeralKey::create_from_private_key(&party1_key, &message);
 
         // compute c = H0(Rtag || apk || message)
@@ -138,11 +141,11 @@ mod tests {
             &BigInt::from(0),
             &party1_ephemeral_key.keypair.public_key,
         );
-
         // verify:
-        assert!(verify(&s, &R, &party1_key.public_key, &message, is_musig).is_ok())
+        assert!(verify(&s, &R, &party1_key.public_key, &message, is_musig).is_ok());
     }
 
+    //this test works only for curvesecp256k1
     #[test]
     fn test_schnorr_bip_test_vector_2() {
         let private_key_raw = "B7E151628AED2A6ABF7158809CF4F3C762E7160F38B4DA56A784D9045190CFEF";
