@@ -10,10 +10,11 @@ authors = [
 crate-type = ["lib"]
 
 [dependencies]
-curv = { git = "https://github.com/KZen-networks/curv" ,  features =  ["curvesecp256k1"]}
+curv = { git = "https://github.com/KZen-networks/curv" , branch = "des", features =  ["curvesecp256k1"]}
 
 [dependencies.centipede]
 git = "https://github.com/KZen-networks/centipede"
+branch = "des"
 
 
 
