@@ -94,13 +94,21 @@ impl Keys {
                 ) == bc1_vec[i].com
             })
             .all(|x| x == true);
-
+        /*
         let (vss_scheme, secret_shares) = VerifiableSS::share_at_indices(
             params.threshold,
             params.share_count,
             &self.u_i,
             parties,
         );
+        */
+        let (vss_scheme, secret_shares) = VerifiableSS::share_at_indices(
+            params.threshold,
+            params.share_count,
+            &self.u_i,
+            &parties,
+        );
+
         match correct_key_correct_decom_all {
             true => Ok((vss_scheme, secret_shares, self.party_index.clone())),
             false => Err(InvalidKey),
@@ -122,7 +130,7 @@ impl Keys {
         let correct_ss_verify = (0..y_vec.len())
             .map(|i| {
                 vss_scheme_vec[i]
-                    .validate_share(&secret_shares_vec[i], &index)
+                    .validate_share(&secret_shares_vec[i], *index)
                     .is_ok()
                     && vss_scheme_vec[i].commitments[0] == y_vec[i]
             })
@@ -195,15 +203,15 @@ impl LocalSig {
         vss_private_keys: &Vec<VerifiableSS>,
         vss_ephemeral_keys: &Vec<VerifiableSS>,
     ) -> Result<(VerifiableSS), Error> {
-        ///parties_index_vec is a vector with indices of the parties that are participating and provided gamma_i for this step
-        /// test that enough parties are in this round
+        //parties_index_vec is a vector with indices of the parties that are participating and provided gamma_i for this step
+        // test that enough parties are in this round
         assert!(parties_index_vec.len() > vss_private_keys[0].parameters.threshold);
 
-        /// Vec of joint commitments:
-        /// n' = num of signers, n - num of parties in keygen
-        /// [com0_eph_0,... ,com0_eph_n', e*com0_kg_0, ..., e*com0_kg_n ;
-        /// ...  ;
-        /// comt_eph_0,... ,comt_eph_n', e*comt_kg_0, ..., e*comt_kg_n ]
+        // Vec of joint commitments:
+        // n' = num of signers, n - num of parties in keygen
+        // [com0_eph_0,... ,com0_eph_n', e*com0_kg_0, ..., e*com0_kg_n ;
+        // ...  ;
+        // comt_eph_0,... ,comt_eph_n', e*comt_kg_0, ..., e*comt_kg_n ]
         let comm_vec = (0..vss_private_keys[0].parameters.threshold + 1)
             .map(|i| {
                 let mut key_gen_comm_i_vec = (0..vss_private_keys.len())
@@ -229,7 +237,7 @@ impl LocalSig {
             .map(|i| {
                 let gamma_i_g = &g * &gamma_vec[i].gamma_i;
                 vss_sum
-                    .validate_share_public(&gamma_i_g, &(parties_index_vec[i] + 1))
+                    .validate_share_public(&gamma_i_g, parties_index_vec[i] + 1)
                     .is_ok()
             })
             .collect::<Vec<bool>>();

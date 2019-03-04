@@ -79,7 +79,7 @@ fn test_t2_n5_sign_with_4() {
         keygen_t_n_parties(t.clone(), num_parties.clone(), &parties_points_vec);
     let message: [u8; 4] = [79, 77, 69, 82];
 
-    /// each party computes and share a local sig, we collected them here to a vector as each party should do AFTER receiving all local sigs
+    // each party computes and share a local sig, we collected them here to a vector as each party should do AFTER receiving all local sigs
     let local_sig_vec = (0..num_parties.clone())
         .map(|i| {
             LocalSig::compute(
