@@ -249,9 +249,10 @@ impl LocalSig {
     }
 }
 
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Signature {
-    sigma: FE,
-    v: GE,
+    pub sigma: FE,
+    pub v: GE,
 }
 
 impl Signature {
