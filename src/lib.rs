@@ -13,6 +13,11 @@
 
     @license GPL-3.0+ <https://github.com/KZen-networks/multisig-schnorr/blob/master/LICENSE>
 */
+
+#[macro_use]
+extern crate serde_derive;
+extern crate serde;
+
 extern crate centipede;
 extern crate curv;
 pub mod protocols;

@@ -10,6 +10,8 @@ authors = [
 crate-type = ["lib"]
 
 [dependencies]
+serde = "1.0"
+serde_derive = "1.0"
 curv = { git = "https://github.com/KZen-networks/curv" ,  features =  ["ec_secp256k1"]}
 
 [dependencies.centipede]
