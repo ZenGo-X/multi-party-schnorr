@@ -16,7 +16,7 @@
 */
 use curv::cryptographic_primitives::secret_sharing::feldman_vss::VerifiableSS;
 use curv::{FE, GE};
-use protocols::thresholdsig::*;
+use protocols::thresholdsig::bitcoin_schnorr::*;
 
 #[test]
 #[allow(unused_doc_comments)]
