@@ -264,7 +264,7 @@ impl LocalSig {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Signature {
     pub s: FE,
-    pub e: BigInt,
+    pub e: FE,
 }
 
 impl Signature {
@@ -295,20 +295,22 @@ impl Signature {
             &BigInt::from(message),
         ]);
         */
-        Signature { s, e: r }
+        Signature {
+            s,
+            e: ECScalar::from(&r),
+        }
     }
 
     pub fn verify(&self, message: &[u8], pubkey_y: &GE) -> Result<(), Error> {
         let g: GE = GE::generator();
         let sg = g * self.s;
-        let e_fe: FE = ECScalar::from(&self.e);
-        let ey: GE = *pubkey_y * e_fe;
+        let ey: GE = *pubkey_y * self.e;
         let sg_plus_ey: GE = sg + ey;
         let hash_in_concat = sg_plus_ey.bytes_compressed_to_big_int()
             + (pubkey_y.bytes_compressed_to_big_int() << 264)
             + (BigInt::from(message) << 528);
         let r = HSha256::create_hash(&[&hash_in_concat]);
-
+        let r: FE = ECScalar::from(&r);
         /*
         let r = HSha256::create_hash(&[
             &sg_plus_ey.bytes_compressed_to_big_int(),
