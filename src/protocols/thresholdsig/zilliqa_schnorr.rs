@@ -183,18 +183,18 @@ impl LocalSig {
     ) -> LocalSig {
         let beta_i = local_ephemaral_key.x_i.clone();
         let alpha_i = local_private_key.x_i.clone();
-
+        /*
         let hash_in_concat = local_ephemaral_key.y.bytes_compressed_to_big_int()
             + (local_private_key.y.bytes_compressed_to_big_int() << 264)
             + (BigInt::from(message) << 528);
         let e_bn = HSha256::create_hash(&[&hash_in_concat]);
-        /*
+        */
         let e_bn = HSha256::create_hash(&[
             &local_ephemaral_key.y.bytes_compressed_to_big_int(),
             &local_private_key.y.bytes_compressed_to_big_int(),
             &BigInt::from(message),
         ]);
-        */
+
         let e: FE = ECScalar::from(&e_bn);
         let gamma_i = beta_i.sub(&(e.clone() * alpha_i).get_element());
         //   let gamma_i = e.clone() * alpha_i ;
@@ -284,17 +284,18 @@ impl Signature {
             &parties_index_vec[0..reconstruct_limit.clone()],
             &gamma_vec[0..reconstruct_limit.clone()],
         );
+        /*
         let hash_in_concat = v.bytes_compressed_to_big_int()
             + (Y.bytes_compressed_to_big_int() << 264)
             + (BigInt::from(message) << 528);
         let r = HSha256::create_hash(&[&hash_in_concat]);
-        /*
+        */
         let r = HSha256::create_hash(&[
             &v.bytes_compressed_to_big_int(),
             &Y.bytes_compressed_to_big_int(),
             &BigInt::from(message),
         ]);
-        */
+
         Signature {
             s,
             e: ECScalar::from(&r),
@@ -306,18 +307,20 @@ impl Signature {
         let sg = g * self.s;
         let ey: GE = *pubkey_y * self.e;
         let sg_plus_ey: GE = sg + ey;
+        /*
         let hash_in_concat = sg_plus_ey.bytes_compressed_to_big_int()
             + (pubkey_y.bytes_compressed_to_big_int() << 264)
             + (BigInt::from(message) << 528);
         let r = HSha256::create_hash(&[&hash_in_concat]);
-        let r: FE = ECScalar::from(&r);
-        /*
+        */
+
         let r = HSha256::create_hash(&[
             &sg_plus_ey.bytes_compressed_to_big_int(),
             &pubkey_y.bytes_compressed_to_big_int(),
             &BigInt::from(message),
         ]);
-        */
+        let r: FE = ECScalar::from(&r);
+
         if r == self.e {
             Ok(())
         } else {
