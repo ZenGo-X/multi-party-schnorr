@@ -135,11 +135,11 @@ pub fn keygen_t_n_parties(
         .collect::<Vec<Keys>>();
 
     let mut bc1_vec = Vec::new();
-    let mut blind_vec = Vec::new();
+    let mut decom1_vec = Vec::new();
     for i in 0..n.clone() {
-        let (bc1, blind) = party_keys_vec[i].phase1_broadcast();
+        let (bc1, decom1) = party_keys_vec[i].phase1_broadcast();
         bc1_vec.push(bc1);
-        blind_vec.push(blind);
+        decom1_vec.push(decom1);
     }
 
     let y_vec = (0..n.clone())
@@ -154,7 +154,7 @@ pub fn keygen_t_n_parties(
     let mut index_vec = Vec::new();
     for i in 0..n.clone() {
         let (vss_scheme, secret_shares, index) = party_keys_vec[i]
-            .phase1_verify_com_phase2_distribute(&parames, &blind_vec, &y_vec, &bc1_vec, parties)
+            .phase1_verify_com_phase2_distribute(&parames, &decom1_vec, &bc1_vec, parties)
             .expect("invalid key");
         vss_scheme_vec.push(vss_scheme);
         secret_shares_vec.push(secret_shares);
