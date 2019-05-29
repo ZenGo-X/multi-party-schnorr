@@ -43,6 +43,11 @@ pub struct KeyGenBroadcastMessage1 {
     com: BigInt,
 }
 
+pub struct KeyGenBroadcastMessage2 {
+    pub y_i: GE,
+    pub blind_factor: BigInt,
+}
+
 #[derive(Debug)]
 pub struct Parameters {
     pub threshold: usize,   //t
@@ -66,34 +71,36 @@ impl Keys {
         }
     }
 
-    pub fn phase1_broadcast(&self) -> (KeyGenBroadcastMessage1, BigInt) {
+    pub fn phase1_broadcast(&self) -> (KeyGenBroadcastMessage1, KeyGenBroadcastMessage2) {
         let blind_factor = BigInt::sample(SECURITY);
         let com = HashCommitment::create_commitment_with_user_defined_randomness(
             &self.y_i.bytes_compressed_to_big_int(),
             &blind_factor,
         );
         let bcm1 = KeyGenBroadcastMessage1 { com };
-        (bcm1, blind_factor)
+        let decom1 = KeyGenBroadcastMessage2 {
+            y_i: self.y_i,
+            blind_factor,
+        };
+        (bcm1, decom1)
     }
 
     pub fn phase1_verify_com_phase2_distribute(
         &self,
         params: &Parameters,
-        blind_vec: &Vec<BigInt>,
-        y_vec: &Vec<GE>,
+        decom1_vec: &Vec<KeyGenBroadcastMessage2>,
         bc1_vec: &Vec<KeyGenBroadcastMessage1>,
         parties: &[usize],
     ) -> Result<(VerifiableSS, Vec<FE>, usize), Error> {
         // test length:
-        assert_eq!(blind_vec.len(), params.share_count);
+        assert_eq!(decom1_vec.len(), params.share_count);
         assert_eq!(bc1_vec.len(), params.share_count);
-        assert_eq!(y_vec.len(), params.share_count);
         // test decommitments
         let correct_key_correct_decom_all = (0..bc1_vec.len())
             .map(|i| {
                 HashCommitment::create_commitment_with_user_defined_randomness(
-                    &y_vec[i].bytes_compressed_to_big_int(),
-                    &blind_vec[i],
+                    &decom1_vec[i].y_i.bytes_compressed_to_big_int(),
+                    &decom1_vec[i].blind_factor,
                 ) == bc1_vec[i].com
             })
             .all(|x| x == true);
