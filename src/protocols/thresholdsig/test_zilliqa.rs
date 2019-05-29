@@ -145,10 +145,6 @@ pub fn keygen_t_n_parties(
     let y_vec = (0..n.clone())
         .map(|i| party_keys_vec[i].y_i.clone())
         .collect::<Vec<GE>>();
-    let mut y_vec_iter = y_vec.iter();
-    let head = y_vec_iter.next().unwrap();
-    let tail = y_vec_iter;
-    let y_sum = tail.fold(head.clone(), |acc, x| acc + x);
     let mut vss_scheme_vec = Vec::new();
     let mut secret_shares_vec = Vec::new();
     let mut index_vec = Vec::new();
@@ -186,5 +182,5 @@ pub fn keygen_t_n_parties(
         shared_keys_vec.push(shared_keys);
     }
 
-    (party_keys_vec, shared_keys_vec, y_sum, vss_scheme_vec)
+    (party_keys_vec, shared_keys_vec.clone(), shared_keys_vec[0].y, vss_scheme_vec)
 }
