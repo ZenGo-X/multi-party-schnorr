@@ -182,5 +182,10 @@ pub fn keygen_t_n_parties(
         shared_keys_vec.push(shared_keys);
     }
 
-    (party_keys_vec, shared_keys_vec.clone(), shared_keys_vec[0].y, vss_scheme_vec)
+    (
+        party_keys_vec,
+        shared_keys_vec.clone(),
+        shared_keys_vec[0].y,
+        vss_scheme_vec,
+    )
 }
