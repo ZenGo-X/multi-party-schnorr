@@ -43,7 +43,7 @@ pub struct KeyGenBroadcastMessage1 {
     com: BigInt,
 }
 
-pub struct KeyGenMessage2 {
+pub struct KeyGenBroadcastMessage2 {
     pub y_i: GE,
     pub blind_factor: BigInt,
 }
@@ -71,14 +71,14 @@ impl Keys {
         }
     }
 
-    pub fn phase1_broadcast(&self) -> (KeyGenBroadcastMessage1, KeyGenMessage2) {
+    pub fn phase1_broadcast(&self) -> (KeyGenBroadcastMessage1, KeyGenBroadcastMessage2) {
         let blind_factor = BigInt::sample(SECURITY);
         let com = HashCommitment::create_commitment_with_user_defined_randomness(
             &self.y_i.bytes_compressed_to_big_int(),
             &blind_factor,
         );
         let bcm1 = KeyGenBroadcastMessage1 { com };
-        let decom1 = KeyGenMessage2 {
+        let decom1 = KeyGenBroadcastMessage2 {
             y_i: self.y_i,
             blind_factor,
         };
@@ -88,7 +88,7 @@ impl Keys {
     pub fn phase1_verify_com_phase2_distribute(
         &self,
         params: &Parameters,
-        decom1_vec: &Vec<KeyGenMessage2>,
+        decom1_vec: &Vec<KeyGenBroadcastMessage2>,
         bc1_vec: &Vec<KeyGenBroadcastMessage1>,
         parties: &[usize],
     ) -> Result<(VerifiableSS, Vec<FE>, usize), Error> {
