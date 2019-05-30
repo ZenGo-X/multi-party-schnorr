@@ -33,19 +33,28 @@ use curv::{BigInt, FE, GE};
 
 const SECURITY: usize = 256;
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Keys {
     pub u_i: FE,
     pub y_i: GE,
     pub party_index: usize,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct KeyGenBroadcastMessage1 {
     com: BigInt,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct KeyGenBroadcastMessage2 {
     pub y_i: GE,
     pub blind_factor: BigInt,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct KeyGenMessage3 {
+    pub vss_scheme: VerifiableSS,
+    pub secret_share: FE,  // different per party, thus not a broadcast message
 }
 
 #[derive(Debug)]
@@ -53,7 +62,8 @@ pub struct Parameters {
     pub threshold: usize,   //t
     pub share_count: usize, //n
 }
-#[derive(Clone, Serialize, Deserialize)]
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SharedKeys {
     pub y: GE,
     pub x_i: FE,
