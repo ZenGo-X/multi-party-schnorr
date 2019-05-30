@@ -28,8 +28,8 @@ use curv::cryptographic_primitives::commitments::hash_commitment::HashCommitment
 use curv::cryptographic_primitives::commitments::traits::Commitment;
 use curv::cryptographic_primitives::hashing::hash_sha256::HSha256;
 use curv::cryptographic_primitives::hashing::traits::Hash;
-use curv::cryptographic_primitives::secret_sharing::feldman_vss::VerifiableSS;
-use curv::{BigInt, FE, GE};
+pub use curv::cryptographic_primitives::secret_sharing::feldman_vss::VerifiableSS;
+pub use curv::{BigInt, FE, GE};
 
 const SECURITY: usize = 256;
 
