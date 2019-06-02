@@ -30,6 +30,7 @@ use curv::cryptographic_primitives::hashing::hash_sha256::HSha256;
 use curv::cryptographic_primitives::hashing::traits::Hash;
 pub use curv::cryptographic_primitives::secret_sharing::feldman_vss::VerifiableSS;
 pub use curv::{BigInt, FE, GE};
+pub use curv::arithmetic::traits::Converter;
 
 const SECURITY: usize = 256;
 
@@ -57,6 +58,13 @@ pub struct KeyGenMessage3 {
     pub secret_share: FE,  // different per party, thus not a broadcast message
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SignMessage1 {
+    pub message: BigInt,
+    pub local_sig: LocalSig,  // different per party, thus not a broadcast message
+}
+
+
 #[derive(Debug)]
 pub struct Parameters {
     pub threshold: usize,   //t
@@ -67,6 +75,13 @@ pub struct Parameters {
 pub struct SharedKeys {
     pub y: GE,
     pub x_i: FE,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Share {
+    pub id: String,
+    pub shared_key: SharedKeys,
+    pub vss_scheme_vec: Vec<VerifiableSS>,
 }
 
 impl Keys {
@@ -187,6 +202,7 @@ impl Keys {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize, Copy)]
 pub struct LocalSig {
     gamma_i: FE,
     e: FE,
@@ -278,7 +294,7 @@ impl LocalSig {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Signature {
     pub s: FE,
     pub e: FE,
