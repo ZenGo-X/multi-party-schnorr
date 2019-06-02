@@ -24,13 +24,13 @@ use curv::arithmetic::traits::*;
 
 use curv::elliptic::curves::traits::*;
 
+pub use curv::arithmetic::traits::Converter;
 use curv::cryptographic_primitives::commitments::hash_commitment::HashCommitment;
 use curv::cryptographic_primitives::commitments::traits::Commitment;
 use curv::cryptographic_primitives::hashing::hash_sha256::HSha256;
 use curv::cryptographic_primitives::hashing::traits::Hash;
 pub use curv::cryptographic_primitives::secret_sharing::feldman_vss::VerifiableSS;
 pub use curv::{BigInt, FE, GE};
-pub use curv::arithmetic::traits::Converter;
 
 const SECURITY: usize = 256;
 
@@ -55,15 +55,14 @@ pub struct KeyGenBroadcastMessage2 {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct KeyGenMessage3 {
     pub vss_scheme: VerifiableSS,
-    pub secret_share: FE,  // different per party, thus not a broadcast message
+    pub secret_share: FE, // different per party, thus not a broadcast message
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SignMessage1 {
     pub message: BigInt,
-    pub local_sig: LocalSig,  // different per party, thus not a broadcast message
+    pub local_sig: LocalSig,
 }
-
 
 #[derive(Debug)]
 pub struct Parameters {
