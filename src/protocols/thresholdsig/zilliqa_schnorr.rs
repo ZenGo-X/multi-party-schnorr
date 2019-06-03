@@ -24,28 +24,44 @@ use curv::arithmetic::traits::*;
 
 use curv::elliptic::curves::traits::*;
 
+pub use curv::arithmetic::traits::Converter;
 use curv::cryptographic_primitives::commitments::hash_commitment::HashCommitment;
 use curv::cryptographic_primitives::commitments::traits::Commitment;
 use curv::cryptographic_primitives::hashing::hash_sha256::HSha256;
 use curv::cryptographic_primitives::hashing::traits::Hash;
-use curv::cryptographic_primitives::secret_sharing::feldman_vss::VerifiableSS;
-use curv::{BigInt, FE, GE};
+pub use curv::cryptographic_primitives::secret_sharing::feldman_vss::VerifiableSS;
+pub use curv::{BigInt, FE, GE};
 
 const SECURITY: usize = 256;
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Keys {
     pub u_i: FE,
     pub y_i: GE,
     pub party_index: usize,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct KeyGenBroadcastMessage1 {
     com: BigInt,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct KeyGenBroadcastMessage2 {
     pub y_i: GE,
     pub blind_factor: BigInt,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct KeyGenMessage3 {
+    pub vss_scheme: VerifiableSS,
+    pub secret_share: FE, // different per party, thus not a broadcast message
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SignMessage1 {
+    pub message: BigInt,
+    pub local_sig: LocalSig,
 }
 
 #[derive(Debug)]
@@ -53,10 +69,18 @@ pub struct Parameters {
     pub threshold: usize,   //t
     pub share_count: usize, //n
 }
-#[derive(Clone, Serialize, Deserialize)]
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SharedKeys {
     pub y: GE,
     pub x_i: FE,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Share {
+    pub id: String,
+    pub shared_key: SharedKeys,
+    pub vss_scheme_vec: Vec<VerifiableSS>,
 }
 
 impl Keys {
@@ -177,6 +201,7 @@ impl Keys {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize, Copy)]
 pub struct LocalSig {
     gamma_i: FE,
     e: FE,
@@ -268,7 +293,7 @@ impl LocalSig {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Signature {
     pub s: FE,
     pub e: FE,
