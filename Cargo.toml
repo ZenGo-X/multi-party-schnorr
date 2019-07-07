@@ -3,7 +3,8 @@ name = "multi-party-schnorr"
 version = "0.2.0"
 authors = [
     "Omer <omer@kzencorp.com>",
-    "Gary <gary@kzencorp.com>"
+    "Gary <gary@kzencorp.com>",
+    "Oded Leiba <oded@kzencorp.com>"
 ]
 
 [lib]
@@ -12,12 +13,11 @@ crate-type = ["lib"]
 [dependencies]
 serde = "1.0"
 serde_derive = "1.0"
-curv = { git = "https://github.com/KZen-networks/curv" ,  features =  ["ec_secp256k1"]}
+curv = { git = "https://github.com/KZen-networks/curv", branch = "feature/libra-support", features =  ["ec_secp256k1"]}
 
 [dependencies.centipede]
-git = "https://github.com/KZen-networks/centipede"
-
-
+git = "https://github.com/Kzen-networks/centipede"
+branch = "feature/libra-support"
 
 [dev-dependencies]
 hex = "0.3.2"
