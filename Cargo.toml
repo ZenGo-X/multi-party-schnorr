@@ -13,11 +13,11 @@ crate-type = ["lib"]
 [dependencies]
 serde = "1.0"
 serde_derive = "1.0"
-curv = { git = "https://github.com/KZen-networks/curv", branch = "feature/libra-support", features =  ["ec_secp256k1"]}
+curv = { git = "https://github.com/KZen-networks/curv", branch = "feature/libra-support-fix", features =  ["ec_secp256k1"]}
 
 [dependencies.centipede]
 git = "https://github.com/Kzen-networks/centipede"
-branch = "feature/libra-support"
+branch = "feature/libra-support-fix"
 
 [dev-dependencies]
 hex = "0.3.2"
