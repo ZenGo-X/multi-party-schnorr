@@ -75,5 +75,4 @@ mod tests {
         assert!(MT256::validate_proof(&proof1, root).is_ok());
         assert!(MT256::validate_proof(&proof2, root).is_ok());
     }
-
 }
