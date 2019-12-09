@@ -241,7 +241,7 @@ impl LocalSig {
         parties_index_vec: &[usize],
         vss_private_keys: &Vec<VerifiableSS>,
         vss_ephemeral_keys: &Vec<VerifiableSS>,
-    ) -> Result<(VerifiableSS), Error> {
+    ) -> Result<VerifiableSS, Error> {
         //parties_index_vec is a vector with indices of the parties that are participating and provided gamma_i for this step
         // test that enough parties are in this round
         assert!(parties_index_vec.len() > vss_private_keys[0].parameters.threshold);
