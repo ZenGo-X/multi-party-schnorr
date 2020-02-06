@@ -221,13 +221,8 @@ impl LocalSig {
             + (BigInt::from(message) << 528);
         let e_bn = HSha256::create_hash(&[&hash_in_concat]);
         */
-        let e_bn = HSha256::create_hash(&[
-            &local_ephemaral_key.y.bytes_compressed_to_big_int(),
-            &local_private_key.y.bytes_compressed_to_big_int(),
-            &BigInt::from(message),
-        ]);
 
-        let e: FE = ECScalar::from(&e_bn);
+        let e = compute_e(&local_ephemaral_key.y, &local_private_key.y, message);
         let gamma_i = beta_i.sub(&(e.clone() * alpha_i).get_element());
         //   let gamma_i = e.clone() * alpha_i ;
 
@@ -346,17 +341,63 @@ impl Signature {
         let r = HSha256::create_hash(&[&hash_in_concat]);
         */
 
-        let r = HSha256::create_hash(&[
-            &sg_plus_ey.bytes_compressed_to_big_int(),
-            &pubkey_y.bytes_compressed_to_big_int(),
-            &BigInt::from(message),
-        ]);
-        let r: FE = ECScalar::from(&r);
+        let r = compute_e(&sg_plus_ey, &pubkey_y, message);
 
         if r == self.e {
             Ok(())
         } else {
             Err(InvalidSig)
         }
+    }
+}
+
+/// Compute e = h(V || Y || message)
+fn compute_e(v: &GE, y: &GE, message: &[u8]) -> FE {
+    let v_bn = v.bytes_compressed_to_big_int();
+    let y_bn = y.bytes_compressed_to_big_int();
+
+    let mut big_ints = vec![&v_bn, &y_bn];
+
+    let m: Vec<BigInt> = Vec::from(message)
+        .into_iter()
+        .map(|i| BigInt::from(i as i32))
+        .collect();
+    for i in &m {
+        big_ints.push(i);
+    }
+
+    let e_bn = HSha256::create_hash(&big_ints);
+    ECScalar::from(&e_bn)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::compute_e;
+    use curv::elliptic::curves::secp256_k1::Secp256k1Scalar;
+    use curv::elliptic::curves::traits::{ECPoint, ECScalar};
+    use curv::{BigInt, FE, GE};
+    use sha2::Digest;
+
+    #[test]
+    fn test_compute_e() {
+        let g: GE = ECPoint::generator();
+        let v: GE = g * Secp256k1Scalar::new_random();
+        let y: GE = g * Secp256k1Scalar::new_random();
+
+        // It should be equal to expected when the message started with "00" byte.
+        let message =
+            hex::decode("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f")
+                .unwrap();
+
+        let expected: FE = {
+            let mut hasher = sha2::Sha256::new();
+            hasher.input(&v.get_element().serialize()[..]);
+            hasher.input(&y.get_element().serialize()[..]);
+            hasher.input(&message[..]);
+            let bn = BigInt::from(&hasher.result()[..]);
+            ECScalar::from(&bn)
+        };
+
+        assert_eq!(expected, compute_e(&v, &y, &message[..]));
     }
 }
