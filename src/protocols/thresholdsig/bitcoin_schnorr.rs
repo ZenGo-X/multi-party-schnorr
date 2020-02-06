@@ -182,18 +182,7 @@ impl LocalSig {
         let beta_i = local_ephemeral_key.x_i.clone();
         let alpha_i = local_private_key.x_i.clone();
 
-        let message_len_bits = message.len() * 8;
-        let R = local_ephemeral_key.y.bytes_compressed_to_big_int();
-        let X = local_private_key.y.bytes_compressed_to_big_int();
-        let X_vec = BigInt::to_vec(&X);
-        let X_vec_len_bits = X_vec.len() * 8;
-        let e_bn = HSha256::create_hash_from_slice(
-            &BigInt::to_vec(
-                &((((R << X_vec_len_bits) + X) << message_len_bits) + BigInt::from(message)),
-            )[..],
-        );
-
-        let e: FE = ECScalar::from(&e_bn);
+        let e = compute_e(&local_ephemeral_key.y, &local_private_key.y, message);
         let gamma_i = beta_i + e.clone() * alpha_i;
 
         LocalSig { gamma_i, e }
@@ -278,12 +267,7 @@ impl Signature {
     }
 
     pub fn verify(&self, message: &[u8], pubkey_y: &GE) -> Result<(), Error> {
-        let e_bn = HSha256::create_hash(&[
-            &self.v.bytes_compressed_to_big_int(),
-            &pubkey_y.bytes_compressed_to_big_int(),
-            &BigInt::from(message),
-        ]);
-        let e: FE = ECScalar::from(&e_bn);
+        let e = compute_e(&self.v, pubkey_y, message);
 
         let g: GE = GE::generator();
         let sigma_g = g * &self.sigma;
@@ -295,5 +279,52 @@ impl Signature {
         } else {
             Err(InvalidSig)
         }
+    }
+}
+
+/// Compute e = h(V || Y || message)
+fn compute_e(v: &GE, y: &GE, message: &[u8]) -> FE {
+    let message_len_bits = message.len() * 8;
+    let R = v.bytes_compressed_to_big_int();
+    let X = y.bytes_compressed_to_big_int();
+    let X_vec = BigInt::to_vec(&X);
+    let X_vec_len_bits = X_vec.len() * 8;
+    let e_bn = HSha256::create_hash_from_slice(
+        &BigInt::to_vec(
+            &((((R << X_vec_len_bits) + X) << message_len_bits) + BigInt::from(message)),
+        )[..],
+    );
+    ECScalar::from(&e_bn)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::compute_e;
+    use curv::elliptic::curves::secp256_k1::Secp256k1Scalar;
+    use curv::elliptic::curves::traits::{ECPoint, ECScalar};
+    use curv::{BigInt, FE, GE};
+    use sha2::Digest;
+
+    #[test]
+    fn test_compute_e() {
+        let g: GE = ECPoint::generator();
+        let v: GE = g * Secp256k1Scalar::new_random();
+        let y: GE = g * Secp256k1Scalar::new_random();
+
+        // It should be equal to expected when the message started with "00" byte.
+        let message =
+            hex::decode("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f")
+                .unwrap();
+
+        let expected: FE = {
+            let mut hasher = sha2::Sha256::new();
+            hasher.input(&v.get_element().serialize()[..]);
+            hasher.input(&y.get_element().serialize()[..]);
+            hasher.input(&message[..]);
+            let bn = BigInt::from(&hasher.result()[..]);
+            ECScalar::from(&bn)
+        };
+
+        assert_eq!(expected, compute_e(&v, &y, &message[..]));
     }
 }

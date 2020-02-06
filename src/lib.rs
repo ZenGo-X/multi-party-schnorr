@@ -18,6 +18,9 @@
 extern crate serde_derive;
 extern crate serde;
 
+#[cfg(test)]
+extern crate sha2;
+
 extern crate centipede;
 extern crate curv;
 pub mod protocols;
