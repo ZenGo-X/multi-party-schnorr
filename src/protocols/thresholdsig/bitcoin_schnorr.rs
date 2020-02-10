@@ -176,20 +176,25 @@ pub struct LocalSig {
 impl LocalSig {
     pub fn compute(
         message: &[u8],
-        local_ephemaral_key: &SharedKeys,
+        local_ephemeral_key: &SharedKeys,
         local_private_key: &SharedKeys,
     ) -> LocalSig {
-        let beta_i = local_ephemaral_key.x_i.clone();
+        let beta_i = local_ephemeral_key.x_i.clone();
         let alpha_i = local_private_key.x_i.clone();
 
-        let e_bn = HSha256::create_hash(&[
-            &local_ephemaral_key.y.bytes_compressed_to_big_int(),
-            &local_private_key.y.bytes_compressed_to_big_int(),
-            &BigInt::from(message),
-        ]);
+        let message_len_bits = message.len() * 8;
+        let R = local_ephemeral_key.y.bytes_compressed_to_big_int();
+        let X = local_private_key.y.bytes_compressed_to_big_int();
+        let X_vec = BigInt::to_vec(&X);
+        let X_vec_len_bits = X_vec.len() * 8;
+        let e_bn = HSha256::create_hash_from_slice(
+            &BigInt::to_vec(
+                &((((R << X_vec_len_bits) + X) << message_len_bits) + BigInt::from(message)),
+            )[..],
+        );
+
         let e: FE = ECScalar::from(&e_bn);
         let gamma_i = beta_i + e.clone() * alpha_i;
-        //   let gamma_i = e.clone() * alpha_i ;
 
         LocalSig { gamma_i, e }
     }
