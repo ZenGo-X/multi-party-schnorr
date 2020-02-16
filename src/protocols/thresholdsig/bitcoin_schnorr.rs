@@ -284,16 +284,15 @@ impl Signature {
 
 /// Compute e = h(V || Y || message)
 fn compute_e(v: &GE, y: &GE, message: &[u8]) -> FE {
-    let message_len_bits = message.len() * 8;
-    let R = v.bytes_compressed_to_big_int();
-    let X = y.bytes_compressed_to_big_int();
-    let X_vec = BigInt::to_vec(&X);
-    let X_vec_len_bits = X_vec.len() * 8;
-    let e_bn = HSha256::create_hash_from_slice(
-        &BigInt::to_vec(
-            &((((R << X_vec_len_bits) + X) << message_len_bits) + BigInt::from(message)),
-        )[..],
-    );
+    let v = v.get_element().serialize();
+    let y = y.get_element().serialize();
+
+    let mut vec: Vec<u8> = Vec::with_capacity(v.len() + y.len() + message.len());
+    vec.extend(&v[..]);
+    vec.extend(&y[..]);
+    vec.extend(message);
+
+    let e_bn = HSha256::create_hash_from_slice(&vec[..]);
     ECScalar::from(&e_bn)
 }
 
