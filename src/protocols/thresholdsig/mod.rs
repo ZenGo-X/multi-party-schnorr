@@ -15,6 +15,7 @@
 */
 /// variant (2)
 pub mod bitcoin_schnorr;
+mod util;
 mod test_bitcoin;
 mod test_zilliqa;
 /// Schnorr signature variants:

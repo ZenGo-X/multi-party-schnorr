@@ -19,6 +19,7 @@
 /// following the signing & verify variant from https://en.wikipedia.org/wiki/Schnorr_signature (classical variant)
 /// also can be found in zilliqa  white paper: https://docs.zilliqa.com/whitepaper.pdf
 use Error::{self, InvalidKey, InvalidSS, InvalidSig};
+use protocols::thresholdsig::util::compute_e;
 
 use curv::arithmetic::traits::*;
 
@@ -348,51 +349,5 @@ impl Signature {
         } else {
             Err(InvalidSig)
         }
-    }
-}
-
-/// Compute e = h(V || Y || message)
-fn compute_e(v: &GE, y: &GE, message: &[u8]) -> FE {
-    let v = v.get_element().serialize();
-    let y = y.get_element().serialize();
-
-    let mut vec: Vec<u8> = Vec::with_capacity(v.len() + y.len() + message.len());
-    vec.extend(&v[..]);
-    vec.extend(&y[..]);
-    vec.extend(message);
-
-    let e_bn = HSha256::create_hash_from_slice(&vec[..]);
-    ECScalar::from(&e_bn)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::compute_e;
-    use curv::elliptic::curves::secp256_k1::Secp256k1Scalar;
-    use curv::elliptic::curves::traits::{ECPoint, ECScalar};
-    use curv::{BigInt, FE, GE};
-    use sha2::Digest;
-
-    #[test]
-    fn test_compute_e() {
-        let g: GE = ECPoint::generator();
-        let v: GE = g * Secp256k1Scalar::new_random();
-        let y: GE = g * Secp256k1Scalar::new_random();
-
-        // It should be equal to expected when the message started with "00" byte.
-        let message =
-            hex::decode("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f")
-                .unwrap();
-
-        let expected: FE = {
-            let mut hasher = sha2::Sha256::new();
-            hasher.input(&v.get_element().serialize()[..]);
-            hasher.input(&y.get_element().serialize()[..]);
-            hasher.input(&message[..]);
-            let bn = BigInt::from(&hasher.result()[..]);
-            ECScalar::from(&bn)
-        };
-
-        assert_eq!(expected, compute_e(&v, &y, &message[..]));
     }
 }
