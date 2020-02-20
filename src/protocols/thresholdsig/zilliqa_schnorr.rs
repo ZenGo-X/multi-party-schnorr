@@ -1,4 +1,5 @@
 #![allow(non_snake_case)]
+use protocols::thresholdsig::util::compute_e;
 #[allow(unused_doc_comments)]
 /*
     Multisig Schnorr
@@ -19,7 +20,6 @@
 /// following the signing & verify variant from https://en.wikipedia.org/wiki/Schnorr_signature (classical variant)
 /// also can be found in zilliqa  white paper: https://docs.zilliqa.com/whitepaper.pdf
 use Error::{self, InvalidKey, InvalidSS, InvalidSig};
-use protocols::thresholdsig::util::compute_e;
 
 use curv::arithmetic::traits::*;
 

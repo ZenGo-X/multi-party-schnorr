@@ -1,4 +1,5 @@
 #![allow(non_snake_case)]
+use protocols::thresholdsig::util::compute_e;
 #[allow(unused_doc_comments)]
 /*
     Multisig Schnorr
@@ -17,7 +18,6 @@
 */
 /// following the variant used in bip-schnorr: https://github.com/sipa/bips/blob/bip-schnorr/bip-schnorr.mediawiki
 use Error::{self, InvalidKey, InvalidSS, InvalidSig};
-use protocols::thresholdsig::util::compute_e;
 
 use curv::arithmetic::traits::*;
 
