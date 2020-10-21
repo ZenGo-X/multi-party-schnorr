@@ -19,7 +19,7 @@
 mod tests {
     use curv::BigInt;
     use curv::GE;
-    use protocols::aggsig::{verify, verify_partial, EphemeralKey, KeyAgg, KeyPair};
+    use protocols::aggsig::musig_two_rounds::{verify, verify_partial, EphemeralKey, KeyAgg, KeyPair};
     extern crate hex;
     use curv::elliptic::curves::traits::*;
 
@@ -44,7 +44,7 @@ mod tests {
             &party2_ephemeral_key.keypair.public_key,
             &party2_ephemeral_key.blind_factor,
             party2_commitment
-        ));
+        )); //Doron: R,nonce
         // p2 release R2' and p1 test com(R2') = com(R2):
         assert!(EphemeralKey::test_com(
             &party1_ephemeral_key.keypair.public_key,
