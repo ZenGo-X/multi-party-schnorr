@@ -116,7 +116,6 @@ impl KeyAgg {
     }
 }
 
-
 #[derive(Debug)]
 pub struct EphemeralKey {
     pub keypair: KeyPair,
@@ -162,29 +161,10 @@ impl EphemeralKey {
 
 }
 
-pub fn hash_0(r_hat: &GE, apk: &GE, message: &[u8], musig_bit: bool) -> BigInt {
-    if musig_bit {
-        HSha256::create_hash(&[
-            &BigInt::from(0),
-            &r_hat.x_coor().unwrap(),
-            &apk.bytes_compressed_to_big_int(),
-            &BigInt::from(message),
-        ])
-    } else {
-        HSha256::create_hash(&[
-            &r_hat.x_coor().unwrap(),
-            &apk.bytes_compressed_to_big_int(),
-            &BigInt::from(message),
-        ])
-    }
-    //Doron: return H(0,R (=R1+R2),apk,m) or H(R,apk,m)
-}
-
 pub struct Msg{
     first_msg:Vec<GE>,
     second_msg: Option<FE>
 }
-
 
 pub struct State0{
     pub keypair:KeyPair,
@@ -197,25 +177,31 @@ pub struct State1{
 }
 
 pub struct State {
-   //    pub signature: FE,
-       State0: State0,
-       State1: Option<State1>,
-       msg: Msg
+    //    pub signature: FE,
+    State0: State0,
+    State1: Option<State1>,
+    msg: Msg
 }
 
 impl State {
 
-    pub fn add_ephemeral_accross_vec(&mut self, msg_vec: Vec<Msg>) -> Vec<GE> {
-        let mut R_j_vec: Vec<GE> = vec![];
-        for j in 0..NUM_OF_SHARES {
-            let pk_0j = self.State0.ephk_vec[j].keypair.public_key;
-            let R_j: GE = msg_vec.
-                iter().
-                //  map(|emph| emph.first_msg.get(j)).
-                fold(pk_0j, |acc, ephk| acc.add_point(&ephk.first_msg.get(j).unwrap().get_element()));
-            R_j_vec.push(R_j);
+
+    pub fn hash_0(r_hat: &GE, apk: &GE, message: &[u8], musig_bit: bool) -> BigInt {
+        if musig_bit {
+            HSha256::create_hash(&[
+                &BigInt::from(0),
+                &r_hat.x_coor().unwrap(),
+                &apk.bytes_compressed_to_big_int(),
+                &BigInt::from(message),
+            ])
+        } else {
+            HSha256::create_hash(&[
+                &r_hat.x_coor().unwrap(),
+                &apk.bytes_compressed_to_big_int(),
+                &BigInt::from(message),
+            ])
         }
-        R_j_vec
+        //Doron: return H(0,R (=R1+R2),apk,m) or H(R,apk,m)
     }
 
     pub fn sign_0(&self, b_coefficients: &Vec<BigInt>, c: &BigInt, x: &KeyPair, a: &BigInt) -> FE {
@@ -223,63 +209,79 @@ impl State {
         let a_fe: FE =ECScalar::from(a);
         let lin_comb_ephemeral: FE = self.State0.ephk_vec.
             iter().
-          //  map(|emph| emph.keypair.private_key).
-           // collect();
-        //let lin_comb_ephemeral: FE = private_ephemeral_vec.
-         //   iter().
+            //  map(|emph| emph.keypair.private_key).
+            // collect();
+            //let lin_comb_ephemeral: FE = private_ephemeral_vec.
+            //   iter().
             zip(b_coefficients).
             fold(ECScalar::zero(), |acc, (ephk,b)|
                 acc + ephk.keypair.private_key * <FE as ECScalar<_>>::from(b));
-
         let s_fe = lin_comb_ephemeral + (c_fe * x.private_key.clone() * a_fe);
         s_fe
         //Doron: sk,r,a,c->r+c*a*sk
     }
 
 
+    pub fn add_ephemeral_keys(&mut self, msg_vec: &[Vec<GE>]) -> Vec<GE> {
+        let mut R_j_vec: Vec<GE> = vec![];
+        for j in 0..NUM_OF_SHARES {
+            let pk_0j = self.State0.ephk_vec[j].keypair.public_key;
+            let R_j: GE = msg_vec.
+                iter().
+                //  map(|emph| emph.first_msg.get(j)).
+                fold(pk_0j, |acc, ephk| acc.add_point(&ephk.get(j).unwrap().get_element()));
+            R_j_vec.push(R_j);
+        }
+        R_j_vec
+    }
 
     pub fn sign_1(x: KeyPair) -> State {
         let ephk_vec = EphemeralKey::create_vec_from_private_key(&x);
         let msg = ephk_vec.
             iter().map(|eph_key| eph_key.keypair.public_key).collect();
-            State{
-                State0: State0{
-                    keypair: x,
-                    ephk_vec: ephk_vec,
-                },
-                State1: None,
-                msg: Msg{
-                    first_msg: msg,
-                    second_msg: None
-                }
+        State{
+            State0: State0{
+                keypair: x,
+                ephk_vec: ephk_vec,
+            },
+            State1: None,
+            msg: Msg{
+                first_msg: msg,
+                second_msg: None
             }
-    }
-
-    pub fn get_msg_1(self)->Vec<GE>{
-        self.msg.first_msg
-    }
-
-    pub fn sign_2(&mut self, message: &[u8], pks:Vec<GE>, msg_vec: Vec<Msg>, party_index:usize) -> &State {
-        let key_agg = KeyAgg::key_aggregation_n(&pks, party_index);
-        let mut R_j_vec:Vec<GE> = vec![];
-        for j in 0..NUM_OF_SHARES {
-             let pk_0j = self.State0.ephk_vec[j].keypair.public_key;
-             let R_j: GE = msg_vec.
-                 iter().
-               //  map(|emph| emph.first_msg.get(j)).
-                 fold(pk_0j, |acc, ephk| acc.add_point(&ephk.first_msg.get(j).unwrap().get_element()));
-             R_j_vec.push(R_j);
         }
+    }
+
+    pub fn get_msg_1(&self)->&[GE]{
+        &self.msg.first_msg
+    }
+
+    pub fn sign_2(&mut self, message: &[u8], pks:Vec<GE>, msg_vec: Vec<Vec<GE>>, party_index:usize) -> &State {
+        let key_agg = KeyAgg::key_aggregation_n(&pks, party_index);
+        // let mut R_j_vec:Vec<GE> = vec![];
+        // for j in 0..NUM_OF_SHARES {
+        //     let pk_0j = self.State0.ephk_vec[j].keypair.public_key;
+        //     let R_j: GE = msg_vec.
+        //         iter().
+        //       //  map(|emph| emph.first_msg.get(j)).
+        //         fold(pk_0j, |acc, ephk| acc.add_point(&ephk.first_msg.get(j).unwrap().get_element()));
+        //     R_j_vec.push(R_j);
+        // }
+        let R_j_vec = self.add_ephemeral_keys(&msg_vec);
         let mut b_coefficients: Vec<BigInt> = Vec::new();
         b_coefficients.push(BigInt::from(1));
+
         for j in 1..NUM_OF_SHARES{
             let mut hnon_preimage: Vec<BigInt> = Vec::new();
-            hnon_preimage.push(BigInt::from(j as i32));
             hnon_preimage.push(key_agg.apk.bytes_compressed_to_big_int());
             for i in 0..NUM_OF_SHARES {
                 hnon_preimage.push(R_j_vec[i].bytes_compressed_to_big_int());
             }
             hnon_preimage.push(BigInt::from(message));
+
+            hnon_preimage.push(BigInt::from(j as i32));
+
+         //   let b_j = HSha256::create_hash(&hnon_preimage.iter().collect::<Vec<_>>());
             let b_j = HSha256::create_hash(&hnon_preimage.iter().collect::<Vec<_>>());
             b_coefficients.push(b_j);
 //            R = R.add_point(R_j_vec[j].scalar_mul(b_j));
@@ -289,7 +291,7 @@ impl State {
             zip(b_coefficients.clone()).
             map(|(R_j, b_j)| R_j.scalar_mul(&<FE as ECScalar<_>>::from(&b_j).get_element())).
             fold( R_j_vec[0],|acc, R_j| acc.add_point(&R_j.get_element()));
-        let c = hash_0(&R, &key_agg.apk, message,true);
+        let c = State::hash_0(&R, &key_agg.apk, message,true);
         let s_i = self.sign_0(&b_coefficients, &c ,&self.State0.keypair ,&key_agg.hash);
         self.State1 = Some(State1{R, s_i});
         self
@@ -312,7 +314,7 @@ impl State {
             (r_tag.x_coor().unwrap(), s1_plus_s2.to_big_int())
         }
     }
-   //Doron s_1,s_2->s_1+s_2
+    //Doron s_1,s_2->s_1+s_2
 }
 
 pub fn verify(
@@ -391,132 +393,143 @@ mod tests {
         let party1_key_agg = KeyAgg::key_aggregation_n(&pks, 0);
         let party2_key_agg = KeyAgg::key_aggregation_n(&pks, 1);
         // compute R' = R1+R2:
-     //   let party1_r_tag = State
+        let mut party_1 = State::sign_1(party1_key);
+        let mut party_2 = State::sign_1(party2_key);
 
-        }
+
+       let party1_msg_1 = vec![Vec::from(party_1.get_msg_1())];
+       let party1_msg_2 = vec![Vec::from(party_2.get_msg_1())];
+
+        //let party2_msg_1 = party_1.get_msg_1();
+
+        let R1:Vec<GE> = party_1.add_ephemeral_keys(&party1_msg_2);
+        let R2:Vec<GE> = party_2.add_ephemeral_keys(&party1_msg_1);
+        assert_eq!(R1,R2);
+    }
 }
 /*
 
- assert_eq!(party1_r_tag, party2_r_tag);
+assert_eq!(party1_r_tag, party2_r_tag);
 
- // compute c = H0(Rtag || apk || message)
- let party1_h_0 =
-     EphemeralKey::hash_0(&party1_r_tag, &party1_key_agg.apk, &message, is_musig);
- let party2_h_0 =
-     EphemeralKey::hash_0(&party2_r_tag, &party2_key_agg.apk, &message, is_musig);
- assert_eq!(party1_h_0, party2_h_0);
+// compute c = H0(Rtag || apk || message)
+let party1_h_0 =
+    EphemeralKey::hash_0(&party1_r_tag, &party1_key_agg.apk, &message, is_musig);
+let party2_h_0 =
+    EphemeralKey::hash_0(&party2_r_tag, &party2_key_agg.apk, &message, is_musig);
+assert_eq!(party1_h_0, party2_h_0);
 
- // compute partial signature s_i and send to the other party:
- let s1 = EphemeralKey::sign(
-     &party1_ephemeral_key,
-     &party1_h_0,
-     &party1_key,
-     &party1_key_agg.hash,
- );
- let s2 = EphemeralKey::sign(
-     &party2_ephemeral_key,
-     &party2_h_0,
-     &party2_key,
-     &party2_key_agg.hash,
- );
+// compute partial signature s_i and send to the other party:
+let s1 = EphemeralKey::sign(
+    &party1_ephemeral_key,
+    &party1_h_0,
+    &party1_key,
+    &party1_key_agg.hash,
+);
+let s2 = EphemeralKey::sign(
+    &party2_ephemeral_key,
+    &party2_h_0,
+    &party2_key,
+    &party2_key_agg.hash,
+);
 
- let r = party1_ephemeral_key.keypair.public_key.x_coor().unwrap();
+let r = party1_ephemeral_key.keypair.public_key.x_coor().unwrap();
 
- assert!(verify_partial(
-     &ECScalar::from(&s1),
-     &r,
-     &ECScalar::from(&party1_h_0),
-     &ECScalar::from(&party1_key_agg.hash),
-     &party1_key.public_key
- )
-     .is_ok());
- // signature s:
- let (r, s) = EphemeralKey::add_signature_parts(s1, &s2, &party1_r_tag);
- // verify:
- assert!(verify(&s, &r, &party1_key_agg.apk, &message, is_musig,).is_ok())
+assert!(verify_partial(
+    &ECScalar::from(&s1),
+    &r,
+    &ECScalar::from(&party1_h_0),
+    &ECScalar::from(&party1_key_agg.hash),
+    &party1_key.public_key
+)
+    .is_ok());
+// signature s:
+let (r, s) = EphemeralKey::add_signature_parts(s1, &s2, &party1_r_tag);
+// verify:
+assert!(verify(&s, &r, &party1_key_agg.apk, &message, is_musig,).is_ok())
 }
 
 #[test]
 fn test_schnorr_one_party() {
- let is_musig = false;
- let message: [u8; 4] = [79, 77, 69, 82];
- let party1_key = KeyPair::create();
- // let party1_key = KeyPair::create_from_private_key(&BigInt::from(259));
- let party1_ephemeral_key = EphemeralKey::create_from_private_key(&party1_key, &message);
+let is_musig = false;
+let message: [u8; 4] = [79, 77, 69, 82];
+let party1_key = KeyPair::create();
+// let party1_key = KeyPair::create_from_private_key(&BigInt::from(259));
+let party1_ephemeral_key = EphemeralKey::create_from_private_key(&party1_key, &message);
 
- // compute c = H0(Rtag || apk || message)
- let party1_h_0 = EphemeralKey::hash_0(
-     &party1_ephemeral_key.keypair.public_key,
-     &party1_key.public_key,
-     &message,
-     is_musig,
- );
+// compute c = H0(Rtag || apk || message)
+let party1_h_0 = EphemeralKey::hash_0(
+    &party1_ephemeral_key.keypair.public_key,
+    &party1_key.public_key,
+    &message,
+    is_musig,
+);
 
- let s_tag = EphemeralKey::sign(
-     &party1_ephemeral_key,
-     &party1_h_0,
-     &party1_key,
-     &BigInt::from(1),
- );
+let s_tag = EphemeralKey::sign(
+    &party1_ephemeral_key,
+    &party1_h_0,
+    &party1_key,
+    &BigInt::from(1),
+);
 
- // signature s:
- let (R, s) = EphemeralKey::add_signature_parts(
-     s_tag,
-     &BigInt::from(0),
-     &party1_ephemeral_key.keypair.public_key,
- );
- // verify:
- assert!(verify(&s, &R, &party1_key.public_key, &message, is_musig).is_ok());
+// signature s:
+let (R, s) = EphemeralKey::add_signature_parts(
+    s_tag,
+    &BigInt::from(0),
+    &party1_ephemeral_key.keypair.public_key,
+);
+// verify:
+assert!(verify(&s, &R, &party1_key.public_key, &message, is_musig).is_ok());
 }
 
 //this test works only for curvesecp256k1
 #[test]
 fn test_schnorr_bip_test_vector_2() {
- let private_key_raw = "B7E151628AED2A6ABF7158809CF4F3C762E7160F38B4DA56A784D9045190CFEF";
- //let public_key_raw =  "03FAC2114C2FBB091527EB7C64ECB11F8021CB45E8E7809D3C0938E4B8C0E5F84B";
- let message_raw = "243F6A8885A308D313198A2E03707344A4093822299F31D0082EFA98EC4E6C89";
+let private_key_raw = "B7E151628AED2A6ABF7158809CF4F3C762E7160F38B4DA56A784D9045190CFEF";
+//let public_key_raw =  "03FAC2114C2FBB091527EB7C64ECB11F8021CB45E8E7809D3C0938E4B8C0E5F84B";
+let message_raw = "243F6A8885A308D313198A2E03707344A4093822299F31D0082EFA98EC4E6C89";
 
- let is_musig = false;
- let message = hex::decode(message_raw).unwrap();
- let party1_key = KeyPair::create_from_private_key(
-     &BigInt::from_str_radix(&private_key_raw, 16).unwrap(),
- );
- let party1_ephemeral_key = EphemeralKey::create_from_private_key(&party1_key, &message);
+let is_musig = false;
+let message = hex::decode(message_raw).unwrap();
+let party1_key = KeyPair::create_from_private_key(
+    &BigInt::from_str_radix(&private_key_raw, 16).unwrap(),
+);
+let party1_ephemeral_key = EphemeralKey::create_from_private_key(&party1_key, &message);
 
- // compute c = H0(Rtag || apk || message)
- let party1_h_0 = EphemeralKey::hash_0(
-     &party1_ephemeral_key.keypair.public_key,
-     &party1_key.public_key,
-     &message,
-     is_musig,
- );
+// compute c = H0(Rtag || apk || message)
+let party1_h_0 = EphemeralKey::hash_0(
+    &party1_ephemeral_key.keypair.public_key,
+    &party1_key.public_key,
+    &message,
+    is_musig,
+);
 
- // compute partial signature s_i and send to the other party:
- let s_tag = EphemeralKey::sign(
-     &party1_ephemeral_key,
-     &party1_h_0,
-     &party1_key,
-     &BigInt::from(1),
- );
+// compute partial signature s_i and send to the other party:
+let s_tag = EphemeralKey::sign(
+    &party1_ephemeral_key,
+    &party1_h_0,
+    &party1_key,
+    &BigInt::from(1),
+);
 
- // signature s:
- let (R, s) = EphemeralKey::add_signature_parts(
-     s_tag,
-     &BigInt::from(0),
-     &party1_ephemeral_key.keypair.public_key,
- );
+// signature s:
+let (R, s) = EphemeralKey::add_signature_parts(
+    s_tag,
+    &BigInt::from(0),
+    &party1_ephemeral_key.keypair.public_key,
+);
 
- let test_vector_R =
-     "2a298dacae57395a15d0795ddbfd1dcb564da82b0f269bc70a74f8220429ba1d".to_string();
- let test_vector_s =
-     "1e51a22ccec35599b8f266912281f8365ffc2d035a230434a1a64dc59f7013fd".to_string();
- let sig_R = R.to_str_radix(16);
- let sig_s = s.to_str_radix(16);
- assert_eq!(test_vector_R, sig_R);
- assert_eq!(test_vector_s, sig_s);
- // verify:
- assert!(verify(&s, &R, &party1_key.public_key, &message, is_musig).is_ok())
+let test_vector_R =
+    "2a298dacae57395a15d0795ddbfd1dcb564da82b0f269bc70a74f8220429ba1d".to_string();
+let test_vector_s =
+    "1e51a22ccec35599b8f266912281f8365ffc2d035a230434a1a64dc59f7013fd".to_string();
+let sig_R = R.to_str_radix(16);
+let sig_s = s.to_str_radix(16);
+assert_eq!(test_vector_R, sig_R);
+assert_eq!(test_vector_s, sig_s);
+// verify:
+assert!(verify(&s, &R, &party1_key.public_key, &message, is_musig).is_ok())
 }
 }
 */
+
 
