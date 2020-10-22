@@ -143,7 +143,7 @@ impl EphemeralKey {
                 blind_factor,
             };
             EphermalKeys_vec.push(eph_key);
-            println!("i: {},size = {}", i, EphermalKeys_vec.len());
+          //  println!("i: {},size = {}", i, EphermalKeys_vec.len());
         }
         EphermalKeys_vec
         //Doron: m,sk,g^sk ->  EphemeralKey{keypair{g^r,r}, H(g^r,nonce),nonce} where r= H(m,sk)
@@ -170,10 +170,11 @@ pub struct State0{
     pub keypair:KeyPair,
     pub ephk_vec:Vec<EphemeralKey>,
 }
-
 pub struct State1{
     pub R: GE,
-    pub s_i: FE
+    pub s_i: FE,
+    pub c: BigInt,
+    pub b_coefficients: Vec<BigInt>
 }
 
 pub struct State {
@@ -222,18 +223,24 @@ impl State {
     }
 
 
-    pub fn add_ephemeral_keys(&mut self, msg_vec: &[Vec<GE>]) -> Vec<GE> {
+    pub fn add_ephemeral_keys(&mut self, msg_vec: &[Vec<GE>],party_index: usize) -> Vec<GE> {
         let mut R_j_vec: Vec<GE> = vec![];
+        //println!("msg_vec {:?}",msg_vec);
+
         for j in 0..NUM_OF_SHARES {
             let pk_0j = self.State0.ephk_vec[j].keypair.public_key;
+        //    println!("self_vec {:?}",pk_0j);
+
             let R_j: GE = msg_vec.
                 iter().
                 //  map(|emph| emph.first_msg.get(j)).
                 fold(pk_0j, |acc, ephk| acc.add_point(&ephk.get(j).unwrap().get_element()));
             R_j_vec.push(R_j);
         }
+      //  println!("R_j_vec {:?}",R_j_vec);
         R_j_vec
     }
+
 
     pub fn sign_1(x: KeyPair) -> State {
         let ephk_vec = EphemeralKey::create_vec_from_private_key(&x);
@@ -252,22 +259,20 @@ impl State {
         }
     }
 
+    pub fn get_pub_emph_keys(&self)->Vec<BigInt>{
+        self.State0.ephk_vec.iter().
+            map(|emph_key| emph_key.keypair.public_key.x_coor().unwrap()).
+            collect()
+    }
+
     pub fn get_msg_1(&self)->&[GE]{
         &self.msg.first_msg
     }
 
-    pub fn sign_2(&mut self, message: &[u8], pks:Vec<GE>, msg_vec: Vec<Vec<GE>>, party_index:usize) -> &State {
+    pub fn sign_2(&mut self, message: &[u8], pks:&Vec<GE>, msg_vec: Vec<Vec<GE>>, party_index:usize) {
         let key_agg = KeyAgg::key_aggregation_n(&pks, party_index);
-        // let mut R_j_vec:Vec<GE> = vec![];
-        // for j in 0..NUM_OF_SHARES {
-        //     let pk_0j = self.State0.ephk_vec[j].keypair.public_key;
-        //     let R_j: GE = msg_vec.
-        //         iter().
-        //       //  map(|emph| emph.first_msg.get(j)).
-        //         fold(pk_0j, |acc, ephk| acc.add_point(&ephk.first_msg.get(j).unwrap().get_element()));
-        //     R_j_vec.push(R_j);
-        // }
-        let R_j_vec = self.add_ephemeral_keys(&msg_vec);
+        let R_j_vec = self.add_ephemeral_keys(&msg_vec,party_index);
+        println!("R_j_vec: {:?}",R_j_vec);
         let mut b_coefficients: Vec<BigInt> = Vec::new();
         b_coefficients.push(BigInt::from(1));
 
@@ -278,9 +283,7 @@ impl State {
                 hnon_preimage.push(R_j_vec[i].bytes_compressed_to_big_int());
             }
             hnon_preimage.push(BigInt::from(message));
-
             hnon_preimage.push(BigInt::from(j as i32));
-
          //   let b_j = HSha256::create_hash(&hnon_preimage.iter().collect::<Vec<_>>());
             let b_j = HSha256::create_hash(&hnon_preimage.iter().collect::<Vec<_>>());
             b_coefficients.push(b_j);
@@ -292,16 +295,17 @@ impl State {
             map(|(R_j, b_j)| R_j.scalar_mul(&<FE as ECScalar<_>>::from(&b_j).get_element())).
             fold( R_j_vec[0],|acc, R_j| acc.add_point(&R_j.get_element()));
         let c = State::hash_0(&R, &key_agg.apk, message,true);
+
         let s_i = self.sign_0(&b_coefficients, &c ,&self.State0.keypair ,&key_agg.hash);
-        self.State1 = Some(State1{R, s_i});
-        self
+        self.State1 = Some(State1 { R, s_i, c, b_coefficients});
+    //    self
     }
 
 
-    pub fn sign_3(msg2vec: Vec<FE>)-> FE{
-        let s:FE = msg2vec.iter().
-            fold(FE::zero(),|acc,s_i| acc+s_i);
-        s
+    pub fn sign_3(&self, msg_vec: &Vec<FE>)-> FE{
+        let s_0 = self.State1.as_ref().unwrap().s_i;
+        msg_vec.iter().
+            fold(s_0, |acc, s_i| acc + s_i)
     }
 
     pub fn add_signature_parts(s1: BigInt, s2: &BigInt, r_tag: &GE) -> (BigInt, BigInt) {
@@ -321,18 +325,11 @@ pub fn verify(
     signature: &BigInt,
     r_x: &BigInt,
     apk: &GE,
-    message: &[u8],
+    c:&BigInt
     //musig_bit: bool,
 ) -> Result<(), ProofError> {
     let base_point: GE = ECPoint::generator();
 
-    let c =
-        HSha256::create_hash(&[
-            &BigInt::from(0),
-            &r_x,
-            &apk.bytes_compressed_to_big_int(),
-            &BigInt::from(message),
-        ]);
     let signature_fe: FE =ECScalar::from(signature);
     let sG = base_point.scalar_mul(&signature_fe.get_element());
     let c: FE =ECScalar::from(&c);
@@ -344,10 +341,10 @@ pub fn verify(
         Err(ProofError)
     }
 }
-
+/*
 pub fn verify_partial(
     signature: &FE,
-    r_x: &BigInt,
+    r_x_vec: &Vec<BigInt>,
     c: &FE,
     a: &FE,
     key_pub: &GE,
@@ -362,12 +359,11 @@ pub fn verify_partial(
         Err(ProofError)
     }
 }
-
-
+*/
 
 #[cfg(test)]
 mod tests {
-    use curv::GE;
+    use curv::{GE, BigInt};
     use protocols::aggsig::musig_three_rounds::*;
 
     extern crate hex;
@@ -390,6 +386,7 @@ mod tests {
         let mut pks: Vec<GE> = Vec::new();
         pks.push(party1_key.public_key.clone());
         pks.push(party2_key.public_key.clone());
+
         let party1_key_agg = KeyAgg::key_aggregation_n(&pks, 0);
         let party2_key_agg = KeyAgg::key_aggregation_n(&pks, 1);
         // compute R' = R1+R2:
@@ -397,14 +394,51 @@ mod tests {
         let mut party_2 = State::sign_1(party2_key);
 
 
-       let party1_msg_1 = vec![Vec::from(party_1.get_msg_1())];
-       let party1_msg_2 = vec![Vec::from(party_2.get_msg_1())];
+        let party1_first_msg = vec![Vec::from(party_1.get_msg_1())];
+        let party2_first_msg = vec![Vec::from(party_2.get_msg_1())];
 
-        //let party2_msg_1 = party_1.get_msg_1();
+        let R1_vec: Vec<GE> = party_1.add_ephemeral_keys(&party2_first_msg, 0);
+        let R2_vec: Vec<GE> = party_2.add_ephemeral_keys(&party1_first_msg, 1);
 
-        let R1:Vec<GE> = party_1.add_ephemeral_keys(&party1_msg_2);
-        let R2:Vec<GE> = party_2.add_ephemeral_keys(&party1_msg_1);
-        assert_eq!(R1,R2);
+        assert_eq!(R1_vec, R2_vec);
+
+        party_1.sign_2(&message, &pks, party2_first_msg, 0);
+        party_2.sign_2(&message, &pks, party1_first_msg, 1);
+        let R1 = party_1.State1.unwrap().R;
+        let R2 = party_2.State1.unwrap().R;
+
+        assert_eq!(R1, R2);
+        /*
+               let s_1: ECScalar<_> = party_1.State1.unwrap().s_i;
+               let s_2: ECScalar<_> = party_2.State1.unwrap().s_i;
+               let s_total_1 = party_1.sign_3(vec![from(s_2)]);
+               verify(s_total_1,)
+               let s_total_2 = party_2.sign_3(vec![from(s_1)]);
+
+
+               let s_1: ECScalar<_>= party_1.State1.unwrap().s_i;
+               let ephk_1 = party_1.get_pub_emph_keys();
+               let a_1: ECScalar<_> = party1_key_agg.hash;
+               let c = party_1.State1.unwrap().c;
+               let Vec<BigInt> =
+               //assert!(verify_partial(s_1,ephk_1,c,a_1,party1_key.public_key));
+
+               //let party2_msg_1 = party_1.get_msg_1();
+               // compute partial signature s_i and send to the other party:
+
+               assert!(verify_partial(
+                   &ECScalar::from(&s1),
+                   &ephk_1,
+                   &ECScalar::from(&party1_h_0),
+                   &ECScalar::from(&party1_key_agg.hash),
+                   &party1_key.public_key
+                       ,Vec<BigInt>
+               )
+                   .is_ok());
+
+
+               assert_eq!(R1,R2);
+       */
     }
 }
 /*
@@ -531,5 +565,4 @@ assert!(verify(&s, &R, &party1_key.public_key, &message, is_musig).is_ok())
 }
 }
 */
-
 
