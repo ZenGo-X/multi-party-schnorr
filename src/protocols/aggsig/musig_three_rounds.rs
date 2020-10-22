@@ -432,7 +432,7 @@ mod tests {
 
         assert_eq!(R1_vec, R2_vec);
         let  (left_arg_partial,right_arg_partial) = party_1.sign_2(&message, &pks, party2_first_msg, 0);
-        let  (left_arg_partial,right_arg_partial) = party_2.sign_2(&message, &pks, party1_first_msg, 0);
+        let  (left_arg_partial,right_arg_partial) = party_2.sign_2(&message, &pks, party1_first_msg, 1);
         let base_point:GE = ECPoint::generator();
 
         let r_1: FE = party_1.get_state_1().r_i;
@@ -444,13 +444,9 @@ mod tests {
         let R1 = party_1.get_state_1().R;
         let R2 = party_2.get_state_1().R;
 
-        let b_vec_1 = vec![party_1.get_state_1().b_coefficients[0].clone(),party_1.get_state_1().b_coefficients[1].clone()];
-        let b_vec_2 =  vec![party_2.get_state_1().b_coefficients[0].clone(),party_2.get_state_1().b_coefficients[1].clone()];
-       println!("b_vec_1 {:?}",b_vec_1);
-        println!("b_vec_2 {:?}",b_vec_2);
-
-      //  assert_eq!(b_vec_1,b_vec_2);
-         assert_eq!(R_left,R1);
+      //  let b_vec_1 = vec![party_1.get_state_1().b_coefficients[0].clone(),party_1.get_state_1().b_coefficients[1].clone()];
+       // let b_vec_2 =  vec![party_2.get_state_1().b_coefficients[0].clone(),party_2.get_state_1().b_coefficients[1].clone()];
+        assert_eq!(R_left,R1);
        assert_eq!(R1, R2);
         println!("left_arg = {:?}", left_arg_partial.get_element());
         println!("right_arg = {:?}", right_arg_partial.get_element());
@@ -467,14 +463,14 @@ mod tests {
 
         let s_total_1 = party_1.sign_3(&vec![s_2]);
         let s_total_2 = party_2.sign_3(&vec![s_1]);
-        //assert_eq!(s_total_1,s_total_2);
+        assert_eq!(s_total_1,s_total_2);
         let left_arg: GE = base_point * s_total_1;
       //  let c_fe: FE  = ECScalar::from(&c);
         let right_arg: GE = party1_key_agg.apk * <FE as ECScalar<_>>::from(&c) + R1;
         println!("left_arg total = {:?}", left_arg.get_element());
         println!("right_arg total = {:?}", right_arg.get_element());
 
-        //assert_eq!(left_arg.get_element(),right_arg.get_element());
+        assert_eq!(left_arg.get_element(),right_arg.get_element());
        // assert!(verify(s_total_1,&R1.x_coor().unwrap() ,&party1_key_agg.apk,&c).is_ok());
        // let s_total_2 = party_2.sign_3(vec![from(s_1)]);
 
