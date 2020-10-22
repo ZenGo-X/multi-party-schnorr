@@ -177,6 +177,12 @@ pub struct State1{
     pub b_coefficients: Vec<BigInt>
 }
 
+impl State1 {
+    fn get(&self) -> FE {
+        self.s_i
+    }
+}
+
 pub struct State {
     //    pub signature: FE,
     State0: State0,
@@ -185,7 +191,9 @@ pub struct State {
 }
 
 impl State {
-
+    pub fn get_state_1(&self) -> &State1 {
+        self.State1.as_ref().unwrap()
+    }
 
     pub fn hash_0(r_hat: &GE, apk: &GE, message: &[u8], musig_bit: bool) -> BigInt {
         if musig_bit {
@@ -205,10 +213,10 @@ impl State {
         //Doron: return H(0,R (=R1+R2),apk,m) or H(R,apk,m)
     }
 
-    pub fn sign_0(&self, b_coefficients: &Vec<BigInt>, c: &BigInt, x: &KeyPair, a: &BigInt) -> FE {
+    pub fn sign_0(&self, b_coefficients: &Vec<BigInt>, c: &BigInt, x: &KeyPair, a: &BigInt) -> (FE,FE) {
         let c_fe: FE =ECScalar::from(c);
         let a_fe: FE =ECScalar::from(a);
-        let lin_comb_ephemeral: FE = self.State0.ephk_vec.
+        let lin_comb_ephemeral_i: FE = self.State0.ephk_vec.
             iter().
             //  map(|emph| emph.keypair.private_key).
             // collect();
@@ -217,8 +225,8 @@ impl State {
             zip(b_coefficients).
             fold(ECScalar::zero(), |acc, (ephk,b)|
                 acc + ephk.keypair.private_key * <FE as ECScalar<_>>::from(b));
-        let s_fe = lin_comb_ephemeral + (c_fe * x.private_key.clone() * a_fe);
-        s_fe
+        let s_fe = lin_comb_ephemeral_i.clone() + (c_fe * x.private_key.clone() * a_fe);
+        (s_fe, lin_comb_ephemeral_i.clone())
         //Doron: sk,r,a,c->r+c*a*sk
     }
 
@@ -269,7 +277,7 @@ impl State {
         &self.msg.first_msg
     }
 
-    pub fn sign_2(&mut self, message: &[u8], pks:&Vec<GE>, msg_vec: Vec<Vec<GE>>, party_index:usize) {
+    pub fn sign_2(&mut self, message: &[u8], pks:&Vec<GE>, msg_vec: Vec<Vec<GE>>, party_index:usize)->(GE,GE) {
         let key_agg = KeyAgg::key_aggregation_n(&pks, party_index);
         let R_j_vec = self.add_ephemeral_keys(&msg_vec,party_index);
         println!("R_j_vec: {:?}",R_j_vec);
@@ -296,9 +304,19 @@ impl State {
             fold( R_j_vec[0],|acc, R_j| acc.add_point(&R_j.get_element()));
         let c = State::hash_0(&R, &key_agg.apk, message,true);
 
-        let s_i = self.sign_0(&b_coefficients, &c ,&self.State0.keypair ,&key_agg.hash);
+        let (s_i, r_i) = self.sign_0(&b_coefficients, &c ,&self.State0.keypair ,&key_agg.hash);
+        let base_point: GE = ECPoint::generator();
+        let left_arg:GE = base_point * s_i;
+        let pub_key  =  self.State0.keypair.public_key;
+        let a_i: FE =  ECScalar::from(&key_agg.hash);
+        let c_fe: FE =  ECScalar::from(&c);
+        let right_arg: GE = pub_key * a_i * c_fe + base_point * r_i;
+       // assert_eq!(left_arg,right_arg);
+        println!("left_arg = {:?}", left_arg.get_element());
+        println!("right_arg = {:?}", right_arg.get_element());
         self.State1 = Some(State1 { R, s_i, c, b_coefficients});
     //    self
+        (left_arg,right_arg)
     }
 
 
@@ -322,7 +340,7 @@ impl State {
 }
 
 pub fn verify(
-    signature: &BigInt,
+    signature: &FE,
     r_x: &BigInt,
     apk: &GE,
     c:&BigInt
@@ -330,8 +348,8 @@ pub fn verify(
 ) -> Result<(), ProofError> {
     let base_point: GE = ECPoint::generator();
 
-    let signature_fe: FE =ECScalar::from(signature);
-    let sG = base_point.scalar_mul(&signature_fe.get_element());
+    //let signature_fe: FE =ECScalar::from(signature);
+    let sG = base_point.scalar_mul(&signature.get_element());
     let c: FE =ECScalar::from(&c);
     let cY = apk.scalar_mul(&c.get_element());
     let sG = sG.sub_point(&cY.get_element());
@@ -401,31 +419,39 @@ mod tests {
         let R2_vec: Vec<GE> = party_2.add_ephemeral_keys(&party1_first_msg, 1);
 
         assert_eq!(R1_vec, R2_vec);
-
-        party_1.sign_2(&message, &pks, party2_first_msg, 0);
-        party_2.sign_2(&message, &pks, party1_first_msg, 1);
-        let R1 = party_1.State1.unwrap().R;
-        let R2 = party_2.State1.unwrap().R;
+        let  (left_arg,right_arg) = party_1.sign_2(&message, &pks, party2_first_msg, 0);
+      //  party_2.sign_2(&message, &pks, party1_first_msg, 1);
+        let R1 = party_1.get_state_1().R;
+        let R2 = party_2.get_state_1().R;
 
         assert_eq!(R1, R2);
-        /*
-               let s_1: ECScalar<_> = party_1.State1.unwrap().s_i;
-               let s_2: ECScalar<_> = party_2.State1.unwrap().s_i;
-               let s_total_1 = party_1.sign_3(vec![from(s_2)]);
-               verify(s_total_1,)
-               let s_total_2 = party_2.sign_3(vec![from(s_1)]);
+        println!("left_arg = {:?}", left_arg.get_element());
+        println!("right_arg = {:?}", right_arg.get_element());
+
+        assert_eq!(left_arg.get_element(), right_arg.get_element());
+       //let s_1 =  party_1.get_state_1().s_i;
+    //    let a_1= party1_key_agg.hash;
+
+        //let s_2= party_2.get_state_1().s_i;
+        //let c = party_1.get_state_1().c.clone();
 
 
-               let s_1: ECScalar<_>= party_1.State1.unwrap().s_i;
-               let ephk_1 = party_1.get_pub_emph_keys();
-               let a_1: ECScalar<_> = party1_key_agg.hash;
-               let c = party_1.State1.unwrap().c;
-               let Vec<BigInt> =
+
+       // let s_total_1 = &party_1.sign_3(&vec![s_2]);
+
+       // assert!(verify(s_total_1,&R1.x_coor().unwrap() ,&party1_key_agg.apk,&c).is_ok());
+       // let s_total_2 = party_2.sign_3(vec![from(s_1)]);
+
+
+      // let s_1: ECScalar<_>= party_1.State1.unwrap().s_i;
+      // let ephk_1 = party_1.get_pub_emph_keys();
+      // let a_1: ECScalar<_> = party1_key_agg.hash;
+      // let Vec<BigInt> =
                //assert!(verify_partial(s_1,ephk_1,c,a_1,party1_key.public_key));
 
                //let party2_msg_1 = party_1.get_msg_1();
                // compute partial signature s_i and send to the other party:
-
+/*
                assert!(verify_partial(
                    &ECScalar::from(&s1),
                    &ephk_1,
