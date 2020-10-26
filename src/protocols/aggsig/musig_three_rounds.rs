@@ -456,10 +456,7 @@ mod tests {
     //    let a_1= party1_key_agg.hash;
 
         let s_2= party_2.get_state_1().s_i;
-
         let c = party_1.get_state_1().c.clone();
-
-
 
         let s_total_1 = party_1.sign_3(&vec![s_2]);
         let s_total_2 = party_2.sign_3(&vec![s_1]);
@@ -471,7 +468,8 @@ mod tests {
         println!("right_arg total = {:?}", right_arg.get_element());
 
         assert_eq!(left_arg.get_element(),right_arg.get_element());
-       // assert!(verify(s_total_1,&R1.x_coor().unwrap() ,&party1_key_agg.apk,&c).is_ok());
+        //assert!(verify(s_total_1,))
+        assert!(verify(&s_total_1,&R1.x_coor().unwrap() ,&party1_key_agg.apk,&c).is_ok());
        // let s_total_2 = party_2.sign_3(vec![from(s_1)]);
 
 
