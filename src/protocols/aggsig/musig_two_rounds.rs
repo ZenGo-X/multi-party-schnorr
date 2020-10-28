@@ -96,7 +96,6 @@ impl KeyAgg {
             })
             .collect();
 
-       // let pk1 = X_tilde_vec.remove(0);
         let sum = X_tilde_vec
             .iter()
             .skip(1)
@@ -149,6 +148,24 @@ impl EphemeralKey {
     }
 }
 
+pub fn hash_sig(r_hat: &GE, X_tilde: &GE, message: &[u8]) -> BigInt {
+    HSha256::create_hash(&[
+        &BigInt::from(0),
+        &r_hat.x_coor().unwrap(),
+        &X_tilde.bytes_compressed_to_big_int(),
+        &BigInt::from(message),
+    ])
+}
+
+
+pub fn sign(x: KeyPair) -> (Vec<GE>, State) {
+    let ephk_vec = EphemeralKey::create_vec_from_private_key(&x);
+    let msg = ephk_vec
+        .iter()
+        .map(|eph_key| eph_key.keypair.public_key)
+        .collect();
+    (msg, State { keypair: x, ephk_vec: ephk_vec })
+}
 
 #[derive(Debug, Clone)]
 pub struct State {
@@ -157,9 +174,9 @@ pub struct State {
 }
 
 
-
-
 impl State {
+
+
     fn add_ephemeral_keys(&self, msg_vec: &[Vec<GE>]) -> Vec<GE> {
         let mut R_j_vec: Vec<GE> = vec![];
         for j in 0..Nv {
@@ -171,6 +188,76 @@ impl State {
         }
         R_j_vec
     }
+
+
+    fn compute_signature_share(
+        &self,
+        b_coefficients: &Vec<BigInt>,
+        c: &BigInt,
+        x: &KeyPair,
+        a: &BigInt,
+    ) -> (FE, FE) {
+        let c_fe: FE = ECScalar::from(c);
+        let a_fe: FE = ECScalar::from(a);
+        let lin_comb_ephemeral_i: FE = self.ephk_vec.
+            iter().
+            zip(b_coefficients).
+            fold(ECScalar::zero(), |acc, (ephk, b)|
+                acc + ephk.keypair.private_key * <FE as ECScalar<_>>::from(b));
+        let s_fe = lin_comb_ephemeral_i.clone() + (c_fe * x.private_key.clone() * a_fe);
+        (s_fe, lin_comb_ephemeral_i.clone())
+    }
+
+
+    // compute global parameters: c, R, and the b's coefficients
+    pub fn compute_global_params(
+        &self,
+        message: &[u8],
+        pks: &Vec<GE>,
+        msg_vec: Vec<Vec<GE>>,
+        party_index: usize,
+    ) -> (BigInt, GE, Vec<BigInt>) {
+        let key_agg = KeyAgg::key_aggregation_n(&pks, party_index);
+        let mut R_j_vec = self.add_ephemeral_keys(&msg_vec);
+        let mut b_coefficients: Vec<BigInt> = Vec::new();
+        b_coefficients.push(BigInt::from(1));
+        for j in 1..Nv {
+            let mut hnon_preimage: Vec<BigInt> = Vec::new();
+            hnon_preimage.push(key_agg.X_tilde.bytes_compressed_to_big_int());
+            for i in 0..Nv {
+                hnon_preimage.push(R_j_vec[i].bytes_compressed_to_big_int());
+            }
+            hnon_preimage.push(BigInt::from(message));
+            hnon_preimage.push(BigInt::from(j as i32));
+            let b_j = HSha256::create_hash(&hnon_preimage.iter().collect::<Vec<_>>());
+            b_coefficients.push(b_j);
+        }
+
+        let R_0 = R_j_vec[0] * &<FE as ECScalar<_>>::from(&b_coefficients[0]);
+        let R: GE = R_j_vec
+            .iter()
+            .zip(b_coefficients.clone())
+            .skip(1)
+            .map(|(R_j, b_j)| R_j * &<FE as ECScalar<_>>::from(&b_j))
+            .fold(R_0, |acc, R_j| acc.add_point(&R_j.get_element()));
+        let c = hash_sig(&R, &key_agg.X_tilde, message);
+        (c, R, b_coefficients)
+    }
+
+
+    pub fn sign_prime(
+        &self,
+        message: &[u8],
+        pks: &Vec<GE>,
+        msg_vec: Vec<Vec<GE>>,
+        party_index: usize,
+    ) -> (StatePrime, FE) {
+        let key_agg = KeyAgg::key_aggregation_n(&pks, party_index);
+        let (c, R, b_coefficients) =
+            self.compute_global_params(message, pks, msg_vec, party_index);
+        let (s_i, r_i) = self.compute_signature_share( &b_coefficients, &c, &self.keypair, &key_agg.a_i);
+        (StatePrime { R, s_i }, s_i)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -179,102 +266,10 @@ pub struct StatePrime {
     pub s_i: FE,
 }
 
-pub fn sign(x: KeyPair) -> ( Vec<GE>, State) {
-    let ephk_vec = EphemeralKey::create_vec_from_private_key(&x);
-    let msg = ephk_vec
-        .iter()
-        .map(|eph_key| eph_key.keypair.public_key)
-        .collect();
-    (msg, State {keypair: x, ephk_vec: ephk_vec})
+pub fn sign_double_prime(StatePrime: StatePrime, msg_vec: &Vec<FE>) -> FE {
+    let s_0 = StatePrime.s_i;
+    msg_vec.iter().fold(s_0, |acc, s_i| acc + s_i)
 }
-
-
-pub fn hash_sig(r_hat: &GE, X_tilde: &GE, message: &[u8]) -> BigInt {
-    HSha256::create_hash(&[
-        &BigInt::from(0),
-        &r_hat.x_coor().unwrap(),
-        &X_tilde.bytes_compressed_to_big_int(),
-        &BigInt::from(message),
-    ])
-}
-
-     fn compute_signature_share(
-         state: &State,
-        b_coefficients: &Vec<BigInt>,
-        c: &BigInt,
-        x: &KeyPair,
-        a: &BigInt,
-    ) -> (FE, FE) {
-        let c_fe: FE = ECScalar::from(c);
-        let a_fe: FE = ECScalar::from(a);
-        let lin_comb_ephemeral_i: FE = state.ephk_vec.
-            iter().
-            zip(b_coefficients).
-            fold(ECScalar::zero(), |acc, (ephk,b)|
-                acc + ephk.keypair.private_key * <FE as ECScalar<_>>::from(b));
-        let s_fe = lin_comb_ephemeral_i.clone() + (c_fe * x.private_key.clone() * a_fe);
-        (s_fe, lin_comb_ephemeral_i.clone())
-    }
-
-
-
-
-
-// compute global parameters: c, R, and the b's coefficients
-pub fn compute_global_params(
-    state:  &State,
-    message: &[u8],
-    pks: &Vec<GE>,
-    msg_vec: Vec<Vec<GE>>,
-    party_index: usize,
-)->(BigInt, GE, Vec<BigInt>){
-    let key_agg = KeyAgg::key_aggregation_n(&pks, party_index);
-    let mut R_j_vec = state.add_ephemeral_keys(&msg_vec);
-    let mut b_coefficients: Vec<BigInt> = Vec::new();
-    b_coefficients.push(BigInt::from(1));
-    for j in 1..Nv {
-        let mut hnon_preimage: Vec<BigInt> = Vec::new();
-        hnon_preimage.push(key_agg.X_tilde.bytes_compressed_to_big_int());
-        for i in 0..Nv {
-            hnon_preimage.push(R_j_vec[i].bytes_compressed_to_big_int());
-        }
-        hnon_preimage.push(BigInt::from(message));
-        hnon_preimage.push(BigInt::from(j as i32));
-        let b_j = HSha256::create_hash(&hnon_preimage.iter().collect::<Vec<_>>());
-        b_coefficients.push(b_j);
-    }
-    let R_j0 = R_j_vec.remove(0);
-    let mut b_coefficients_temp = b_coefficients.clone();
-    let b_0 = b_coefficients_temp.remove(0);
-    let R_0 = R_j0 * &<FE as ECScalar<_>>::from(&b_0);
-    let R: GE = R_j_vec
-        .iter()
-        .zip(b_coefficients_temp.clone())
-        .map(|(R_j, b_j)| R_j * &<FE as ECScalar<_>>::from(&b_j))
-        .fold(R_0, |acc, R_j| acc.add_point(&R_j.get_element()));
-    let c = hash_sig(&R, &key_agg.X_tilde, message);
-    (c, R, b_coefficients)
-}
-
-
-    pub fn sign_prime(
-       state: State,
-        message: &[u8],
-        pks: &Vec<GE>,
-        msg_vec: Vec<Vec<GE>>,
-        party_index: usize,
-    ) -> (StatePrime, FE) {
-        let key_agg = KeyAgg::key_aggregation_n(&pks, party_index);
-        let (c, R, b_coefficients) =
-            compute_global_params( &state, message, pks, msg_vec, party_index);
-        let (s_i, r_i) = compute_signature_share(&state, &b_coefficients, &c, &state.keypair, &key_agg.a_i);
-        (StatePrime{ R, s_i}, s_i)
-    }
-
-    pub fn sign_double_prime(StatePrime: StatePrime, msg_vec: &Vec<FE>) -> FE {
-        let s_0 = StatePrime.s_i;
-        msg_vec.iter().fold(s_0, |acc, s_i| acc + s_i)
-    }
 
 
 
@@ -350,16 +345,16 @@ mod tests {
 
         assert_eq!(R_vec_by_party_1, R_vec_by_party_2);
         let (party_1_StatePrime, s_1) =
-            sign_prime(party_1_state.clone(), &message, &pks, party1_received_msg.clone(), 0);
+            party_1_state.sign_prime( &message, &pks, party1_received_msg.clone(), 0);
         let (party_2_StatePrime, s_2) =
-            sign_prime(party_2_state.clone(), &message, &pks, party2_received_msg.clone(), 1);
+            party_2_state.sign_prime( &message, &pks, party2_received_msg.clone(), 1);
         let base_point: GE = ECPoint::generator();
 
         //  Each party computes R = R1 + R2
         let (c_party_1,R_party_1,_) =
-            compute_global_params(&party_1_state.clone(), &message, &pks,party1_received_msg.clone(),0);
+            party_1_state.compute_global_params(&message, &pks,party1_received_msg.clone(),0);
         let (c_party_2,R_party_2,_)  =
-            compute_global_params(&party_2_state.clone(), &message, &pks,party2_received_msg.clone(),1);
+            party_2_state.compute_global_params( &message, &pks,party2_received_msg.clone(),1);
         assert_eq!(R_party_1, R_party_2);
         assert_eq!(c_party_1, c_party_2);
         let R = R_party_1;
