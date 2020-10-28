@@ -60,6 +60,12 @@ pub struct KeyAgg {
 impl KeyAgg {
 
     pub fn key_aggregation_n(pks: &[GE], party_index: usize) -> KeyAgg {
+        if party_index >= pks.len(){
+            panic!("The is no party with index {}",party_index);
+        }
+        if pks.len() == 0{
+            panic!("Not enough participant for multi-signature",);
+        }
         let bn_1 = BigInt::from(1);
         let x_coor_vec: Vec<BigInt> = pks
             .iter()
@@ -90,10 +96,11 @@ impl KeyAgg {
             })
             .collect();
 
-        let pk1 = X_tilde_vec.remove(0);
+       // let pk1 = X_tilde_vec.remove(0);
         let sum = X_tilde_vec
             .iter()
-            .fold(pk1, |acc, pk| acc.add_point(&pk.get_element()));
+            .skip(1)
+            .fold(X_tilde_vec[0], |acc, pk| acc.add_point(&pk.get_element()));
 
         KeyAgg {
             X_tilde: sum,
@@ -113,32 +120,34 @@ pub struct EphemeralKey {
 
 
 impl EphemeralKey {
-    pub fn create_vec_from_private_key(x1: &KeyPair) -> Vec<EphemeralKey> {
-        let mut EphermalKeys_vec: Vec<EphemeralKey> = vec![];
-        for i in 0..Nv {
-            let base_point: GE = ECPoint::generator();
-            let hash_private_key_message =
-                HSha256::create_hash(&[&x1.private_key.to_big_int(), &BigInt::from(i as i32)]);
-            let ephemeral_private_key: FE = ECScalar::from(&hash_private_key_message);
-            let ephemeral_public_key = base_point.scalar_mul(&ephemeral_private_key.get_element());
-            let (commitment, blind_factor) = HashCommitment::create_commitment(
-                &ephemeral_public_key.bytes_compressed_to_big_int(),
-            );
-            let eph_key = EphemeralKey {
-                keypair: KeyPair {
-                    public_key: ephemeral_public_key,
-                    private_key: ephemeral_private_key,
-                },
-                commitment,
-                blind_factor,
-            };
-            EphermalKeys_vec.push(eph_key);
+    pub fn create_from_private_key(x1: &KeyPair, pad: usize) -> EphemeralKey {
+        let base_point: GE = ECPoint::generator();
+        let hash_private_key_message =
+            HSha256::create_hash(&[&x1.private_key.to_big_int(), &BigInt::from(pad as i32)]);
+        let ephemeral_private_key: FE = ECScalar::from(&hash_private_key_message);
+        let ephemeral_public_key = base_point.scalar_mul(&ephemeral_private_key.get_element());
+        let (commitment, blind_factor) =
+            HashCommitment::create_commitment(&ephemeral_public_key.bytes_compressed_to_big_int());
+        EphemeralKey {
+            keypair: KeyPair {
+                public_key: ephemeral_public_key,
+                private_key: ephemeral_private_key,
+            },
+            commitment,
+            blind_factor,
         }
-        EphermalKeys_vec
-     }
+    }
 
+
+    pub fn create_vec_from_private_key(x1: &KeyPair) -> Vec<EphemeralKey> {
+        let mut EphemeralKeys_vec: Vec<EphemeralKey> = vec![];
+        for i in 0..Nv {
+            let eph_key = EphemeralKey::create_from_private_key(x1, i);
+            EphemeralKeys_vec.push(eph_key);
+        }
+        EphemeralKeys_vec
+    }
 }
-
 
 
 #[derive(Debug, Clone)]
@@ -187,12 +196,6 @@ pub fn hash_sig(r_hat: &GE, X_tilde: &GE, message: &[u8]) -> BigInt {
         &X_tilde.bytes_compressed_to_big_int(),
         &BigInt::from(message),
     ])
-}
-
-impl StatePrime {
-    pub fn get_StatePrime(&self) -> &StatePrime {
-        self
-    }
 }
 
      fn compute_signature_share(
