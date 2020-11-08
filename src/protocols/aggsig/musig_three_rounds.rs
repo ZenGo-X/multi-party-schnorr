@@ -351,7 +351,7 @@ mod tests {
             &ECScalar::from(&party1_key_agg.hash),
             &party1_key.public_key
         )
-            .is_ok());
+        .is_ok());
 
         // signature s:
         let (r, s) = EphemeralKey::add_signature_parts(s1, &s2, &party1_r_tag);

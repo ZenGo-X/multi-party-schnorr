@@ -372,6 +372,4 @@ mod tests {
         // verification that the signature is computed correctly
         assert!(verify(&s, &R.x_coor().unwrap(), &party1_key_agg.X_tilde, &c).is_ok());
     }
-
-
 }
