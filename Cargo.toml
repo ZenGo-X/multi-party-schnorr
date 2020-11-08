@@ -3,7 +3,8 @@ name = "multi-party-schnorr"
 version = "0.3.3"
 authors = [
     "Omer <omer@kzencorp.com>",
-    "Gary <gary@kzencorp.com>"
+    "Gary <gary@kzencorp.com>",
+    "Doron <doron@kzencorp.com>"
 ]
 
 [lib]
