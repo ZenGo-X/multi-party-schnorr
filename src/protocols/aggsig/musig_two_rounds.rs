@@ -27,7 +27,7 @@ use curv::cryptographic_primitives::proofs::*;
 use curv::elliptic::curves::traits::*;
 use curv::{BigInt, FE, GE};
 
-#[warn(dead_code)]
+#[allow(non_upper_case_globals)]
 const Nv: usize = 2;
 
 #[derive(Debug, Clone)]
@@ -92,7 +92,7 @@ impl KeyAgg {
             })
             .collect();
 
-        let mut X_tilde_vec: Vec<GE> = pks
+        let  X_tilde_vec: Vec<GE> = pks
             .iter()
             .zip(&hash_vec)
             .map(|(pk, hash)| {
@@ -150,12 +150,6 @@ impl EphemeralKey {
     }
 }
 
-pub fn hash_tag_challange(r_hat: &GE, X_tilde: &GE) -> BigInt {
-    HSha256::create_hash(&[
-        &r_hat.x_coor().unwrap(),
-        &X_tilde.bytes_compressed_to_big_int(),
-    ])
-}
 
 pub fn hash_tag(r_hat: &GE, X_tilde: &GE) -> BigInt {
     HSha256::create_hash(&[
@@ -206,7 +200,7 @@ impl State {
         c: &BigInt,
         x: &KeyPair,
         a: &BigInt,
-    ) -> (FE, FE) {
+    ) -> FE {
         let c_fe: FE = ECScalar::from(c);
         let a_fe: FE = ECScalar::from(a);
         let lin_comb_ephemeral_i: FE = self
@@ -217,7 +211,7 @@ impl State {
                 acc + ephk.keypair.private_key * <FE as ECScalar<_>>::from(b)
             });
         let s_fe = lin_comb_ephemeral_i.clone() + (c_fe * x.private_key.clone() * a_fe);
-        (s_fe, lin_comb_ephemeral_i.clone())
+        s_fe
     }
 
     // compute global parameters: c, R, and the b's coefficients
@@ -229,7 +223,7 @@ impl State {
         party_index: usize,
     ) -> (BigInt, GE, Vec<BigInt>) {
         let key_agg = KeyAgg::key_aggregation_n(&pks, party_index);
-        let mut R_j_vec = self.add_ephemeral_keys(&msg_vec);
+        let R_j_vec = self.add_ephemeral_keys(&msg_vec);
         let mut b_coefficients: Vec<BigInt> = Vec::new();
         b_coefficients.push(BigInt::from(1));
         for j in 1..Nv {
@@ -264,7 +258,7 @@ impl State {
     ) -> (StatePrime, FE) {
         let key_agg = KeyAgg::key_aggregation_n(&pks, party_index);
         let (c, R, b_coefficients) = self.compute_global_params(message, pks, msg_vec, party_index);
-        let (s_i, r_i) =
+        let s_i =
             self.compute_signature_share(&b_coefficients, &c, &self.keypair, &key_agg.a_i);
         (StatePrime { R, s_i }, s_i)
     }
@@ -301,12 +295,9 @@ pub fn verify(
 
 #[cfg(test)]
 mod tests {
-    use curv::{BigInt, FE, GE};
+    use curv::{ GE};
     use protocols::aggsig::musig_two_rounds::*;
-
     extern crate hex;
-
-    use curv::elliptic::curves::traits::*;
 
     #[test]
     fn test_multiparty_signing_for_two_parties() {
@@ -325,8 +316,8 @@ mod tests {
         assert_eq!(party1_key_agg.X_tilde, party2_key_agg.X_tilde);
 
         //Sign: each party creates state that contains a vector of ephemeral keys
-        let (party_1_msg_round_1, mut party_1_state) = sign(party1_key);
-        let (party_2_msg_round_1, mut party_2_state) = sign(party2_key);
+        let (party_1_msg_round_1, party_1_state) = sign(party1_key);
+        let (party_2_msg_round_1, party_2_state) = sign(party2_key);
 
         // Round 1: sending public ephemeral keys
         let party1_received_msg_round_1 = vec![Vec::from(party_2_msg_round_1)];
