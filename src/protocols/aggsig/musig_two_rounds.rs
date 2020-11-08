@@ -11,11 +11,12 @@
 
 //! Two-round Multisig Schnorr
 //! From Jonas Nick, Tim Ruffing, and Yannick Seurin "MuSig2: Simple Two-Round Schnorr Multi-Signatures"
-//! Available at https://eprint.iacr.org/2020/1261
-//! This implementation is based on the protocol presented on page 12
+//! This implementation is based on https://eprint.iacr.org/2020/1261 page 12
 //! The naming of the functions, states, and variables is aligned with that of the protocol
 //! The number of shares Nv is set to 2 for which the authors claim to be secure assuming ROM and AGM
 // TODO: add support to bip340
+
+#![allow(non_snake_case)]
 
 use curv::arithmetic::traits::Converter;
 use curv::cryptographic_primitives::commitments::hash_commitment::HashCommitment;
@@ -371,4 +372,6 @@ mod tests {
         // verification that the signature is computed correctly
         assert!(verify(&s, &R.x_coor().unwrap(), &party1_key_agg.X_tilde, &c).is_ok());
     }
+
+
 }
