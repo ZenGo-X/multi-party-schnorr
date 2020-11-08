@@ -1,22 +1,21 @@
-[![Build Status](https://travis-ci.com/ZenGo-X/multi-party-schnorr.svg?branch=master)](https://travis-ci.com/KZen-networks/multi-party-schnorr)
+[![Build Status](https://travis-ci.com/ZenGo-X/multi-party-schnorr.svg?branch=master)](https://travis-ci.com/zengo-x/multi-party-schnorr)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 Multi Party Schnorr Signatures
 =====================================
 This library contains several Rust implementations of multi-signature Schnorr schemes. 
 Generally speaking, these schemes can be classified into: 
-1. {n,n}-multi-signature scheme (musig). These schemes require that all parties engage in cooperation to issue the signature. 
+1. {n,n}-multi-signature scheme. These schemes require that all parties engage in cooperation to issue the signature. 
 2. {t,n}-threshold-signature schemes (TSS). These schemes require that any subset of at least t+1 parties engage in cooperation to issue a valid signature.
 
-##Different protocol implementation
-This repo implement different Schnorr multi-signature schemes. There is tradoffs between these schemes with respect to type, performance, communications rounds and security assumptions. 
+## Different protocol implementation
+This repo implements different Schnorr multi-signature schemes. There is tradoffs between these schemes with respect to type, performance, communications rounds and security assumptions. 
 We use abbreviations DLP, ROM, ASM for respectively, discrete log problem, random oracle model, algebraic group model. 
 
 | protocol | Type | Rounds | Assumptions | comments | 
 | ----------| --------|-------|----------| --- |
-| Maxwell, et al. [1] |  {n,n} | 3 | DLP, ROM | flawed security proof 
-| Boneh, et al. [2] (section 5)|  {n,n} | 3 | DLP, ROM | fixes the security proof of [1]  
-| Nick, et al. [3] |  {n,n} | 2 | DLP, ROM, AGM  | improvement on [2]  
+| Boneh, et al.(MuSig) [2] (section 5)|  {n,n} | 3 | DLP, ROM | fixes the security proof of [1]  
+| Nick, et al.(MuSig2) [3] |  {n,n} | 2 | DLP, ROM, AGM  | improvement on [2]  
 | Micali, et al. [4] |  {n,n} | 3 | DLP, ROM | 
 | Stinson-Strobl [5] |  {t,n} | 3 | DLP, ROM |  See (*)
 
@@ -31,7 +30,7 @@ We use abbreviations DLP, ROM, ASM for respectively, discrete log problem, rando
 
 (2) This code is not secure against side-channel attacks
 
-(3) The code do not contain a network layer (if you are interested, check [white-city](https://github.com/KZen-networks/white-city) for ongoing effort, contribtutions are welcome)
+(3) The code does not contain a network layer (if you are interested, check [white-city](https://github.com/KZen-networks/white-city) for ongoing effort, contribtutions are welcome)
 
 <!---
 Get Started
@@ -43,9 +42,7 @@ Get Started
 [threshold 3 out of 5 with 4 parties in signing](https://github.com/KZen-networks/multi-party-schnorr/blob/master/src/protocols/thresholdsig/test.rs#L61)
 --->
 
-Development Process
--------------------
-This contribution workflow is described in [CONTRIBUTING.md](CONTRIBUTING.md).
+
 
 Contact
 -------------------
