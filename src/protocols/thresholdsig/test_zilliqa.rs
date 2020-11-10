@@ -16,10 +16,9 @@
 */
 use curv::cryptographic_primitives::secret_sharing::feldman_vss::VerifiableSS;
 use protocols::thresholdsig::zilliqa_schnorr::*;
-use curv::elliptic::curves::secp256_k1;
 
-type GE = curv::elliptic::curves::secp256_k1::GE;
-type FE = curv::elliptic::curves::secp256_k1::FE;
+use curv::elliptic::curves::secp256_k1::FE;
+use curv::elliptic::curves::secp256_k1::GE;
 
 #[test]
 #[allow(unused_doc_comments)]
@@ -123,6 +122,7 @@ fn test_t2_n5_sign_with_4() {
     assert!(verify_sig.is_ok());
 }
 
+#[allow(dead_code)]
 pub fn keygen_t_n_parties(
     t: usize,
     n: usize,

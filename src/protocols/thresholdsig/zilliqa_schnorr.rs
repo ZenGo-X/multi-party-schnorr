@@ -31,7 +31,6 @@ use curv::cryptographic_primitives::hashing::hash_sha256::HSha256;
 use curv::cryptographic_primitives::hashing::traits::Hash;
 pub use curv::cryptographic_primitives::secret_sharing::feldman_vss::VerifiableSS;
 pub use curv::BigInt;
-use curv::elliptic::curves::secp256_k1;
 
 type GE = curv::elliptic::curves::secp256_k1::GE;
 type FE = curv::elliptic::curves::secp256_k1::FE;

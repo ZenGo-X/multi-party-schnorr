@@ -17,10 +17,9 @@
 #[cfg(test)]
 mod tests {
     use curv::cryptographic_primitives::hashing::merkle_tree::MT256;
+    use curv::elliptic::curves::secp256_k1::FE;
+    use curv::elliptic::curves::secp256_k1::GE;
     use curv::elliptic::curves::traits::ECScalar;
-    use curv::elliptic::curves::secp256_k1;
-    type FE = curv::elliptic::curves::secp256_k1::FE;
-    type GE = curv::elliptic::curves::secp256_k1::GE;
 
     use protocols::multisig::{partial_sign, verify, EphKey, Keys, Signature};
 

@@ -26,7 +26,6 @@ use centipede::juggling::segmentation::Msegmentation;
 use curv::cryptographic_primitives::hashing::hash_sha256::HSha256;
 use curv::cryptographic_primitives::hashing::traits::*;
 use protocols::multisig;
-use curv::elliptic::curves::secp256_k1;
 
 type GE = curv::elliptic::curves::secp256_k1::GE;
 type FE = curv::elliptic::curves::secp256_k1::FE;

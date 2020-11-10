@@ -25,7 +25,6 @@ use curv::cryptographic_primitives::hashing::traits::*;
 use curv::arithmetic::traits::Converter;
 use curv::cryptographic_primitives::commitments::hash_commitment::HashCommitment;
 use curv::cryptographic_primitives::commitments::traits::*;
-use curv::elliptic::curves::secp256_k1;
 
 type GE = curv::elliptic::curves::secp256_k1::GE;
 type FE = curv::elliptic::curves::secp256_k1::FE;
@@ -272,7 +271,6 @@ mod tests {
     use super::*;
     use curv::BigInt;
     extern crate hex;
-    use curv::elliptic::curves::traits::*;
 
     #[test]
     fn test_multiparty_signing_for_two_parties() {
