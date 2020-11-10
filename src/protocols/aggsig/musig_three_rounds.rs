@@ -14,7 +14,7 @@
 //! aggregated Schnorr {n,n}-Signatures
 //!
 //! See https://eprint.iacr.org/2018/068.pdf, https://eprint.iacr.org/2018/483.pdf subsection 5.1
-use curv::{BigInt, FE, GE};
+use curv::BigInt;
 
 use curv::cryptographic_primitives::proofs::*;
 use curv::elliptic::curves::traits::*;
@@ -25,6 +25,10 @@ use curv::cryptographic_primitives::hashing::traits::*;
 use curv::arithmetic::traits::Converter;
 use curv::cryptographic_primitives::commitments::hash_commitment::HashCommitment;
 use curv::cryptographic_primitives::commitments::traits::*;
+use curv::elliptic::curves::secp256_k1;
+
+type GE = curv::elliptic::curves::secp256_k1::GE;
+type FE = curv::elliptic::curves::secp256_k1::FE;
 
 #[derive(Debug)]
 pub struct KeyPair {
@@ -267,7 +271,6 @@ pub fn verify_partial(
 mod tests {
     use super::*;
     use curv::BigInt;
-    use curv::GE;
     extern crate hex;
     use curv::elliptic::curves::traits::*;
 

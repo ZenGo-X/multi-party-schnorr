@@ -25,9 +25,13 @@ use curv::cryptographic_primitives::hashing::hash_sha256::HSha256;
 use curv::cryptographic_primitives::hashing::traits::*;
 use curv::cryptographic_primitives::proofs::*;
 use curv::elliptic::curves::traits::*;
-use curv::{BigInt, FE, GE};
+use curv::BigInt;
+use curv::elliptic::curves::secp256_k1;
 
-#[warn(dead_code)]
+type GE = curv::elliptic::curves::secp256_k1::GE;
+type FE = curv::elliptic::curves::secp256_k1::FE;
+
+#[allow(non_upper_case_globals)]
 const Nv: usize = 2;
 
 #[derive(Debug, Clone)]
@@ -214,7 +218,7 @@ impl State {
             .iter()
             .zip(b_coefficients)
             .fold(ECScalar::zero(), |acc, (ephk, b)| {
-                acc + ephk.keypair.private_key * <FE as ECScalar<_>>::from(b)
+                acc + ephk.keypair.private_key * <FE as ECScalar>::from(b)
             });
         let s_fe = lin_comb_ephemeral_i.clone() + (c_fe * x.private_key.clone() * a_fe);
         (s_fe, lin_comb_ephemeral_i.clone())
@@ -244,12 +248,12 @@ impl State {
             b_coefficients.push(b_j);
         }
 
-        let R_0 = R_j_vec[0] * &<FE as ECScalar<_>>::from(&b_coefficients[0]);
+        let R_0 = R_j_vec[0] * &<FE as ECScalar>::from(&b_coefficients[0]);
         let R: GE = R_j_vec
             .iter()
             .zip(b_coefficients.clone())
             .skip(1)
-            .map(|(R_j, b_j)| R_j * &<FE as ECScalar<_>>::from(&b_j))
+            .map(|(R_j, b_j)| R_j * &<FE as ECScalar>::from(&b_j))
             .fold(R_0, |acc, R_j| acc.add_point(&R_j.get_element()));
         let c = hash_tag(&R, &key_agg.X_tilde);
         (c, R, b_coefficients)
@@ -301,7 +305,10 @@ pub fn verify(
 
 #[cfg(test)]
 mod tests {
-    use curv::{BigInt, FE, GE};
+    use curv::BigInt;
+    use curv::elliptic::curves::secp256_k1;
+    type GE = curv::elliptic::curves::secp256_k1::GE;
+    type FE = curv::elliptic::curves::secp256_k1::FE;
     use protocols::aggsig::musig_two_rounds::*;
 
     extern crate hex;
