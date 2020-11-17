@@ -15,8 +15,10 @@
     @license GPL-3.0+ <https://github.com/KZen-networks/multisig-schnorr/blob/master/LICENSE>
 */
 use curv::cryptographic_primitives::secret_sharing::feldman_vss::VerifiableSS;
-use curv::{FE, GE};
 use protocols::thresholdsig::zilliqa_schnorr::*;
+
+use curv::elliptic::curves::secp256_k1::FE;
+use curv::elliptic::curves::secp256_k1::GE;
 
 #[test]
 #[allow(unused_doc_comments)]
@@ -120,11 +122,12 @@ fn test_t2_n5_sign_with_4() {
     assert!(verify_sig.is_ok());
 }
 
+#[allow(dead_code)]
 pub fn keygen_t_n_parties(
     t: usize,
     n: usize,
     parties: &[usize],
-) -> (Vec<Keys>, Vec<SharedKeys>, GE, Vec<VerifiableSS>) {
+) -> (Vec<Keys>, Vec<SharedKeys>, GE, Vec<VerifiableSS<GE>>) {
     let parames = Parameters {
         threshold: t,
         share_count: n.clone(),

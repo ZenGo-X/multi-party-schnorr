@@ -17,8 +17,10 @@
 #[cfg(test)]
 mod tests {
     use curv::cryptographic_primitives::hashing::merkle_tree::MT256;
+    use curv::elliptic::curves::secp256_k1::FE;
+    use curv::elliptic::curves::secp256_k1::GE;
     use curv::elliptic::curves::traits::ECScalar;
-    use curv::FE;
+
     use protocols::multisig::{partial_sign, verify, EphKey, Keys, Signature};
 
     #[test]
@@ -72,7 +74,7 @@ mod tests {
         let sig = Signature::set_signature(&Xt, &y);
         assert!(verify(&It, &sig, &es).is_ok());
 
-        assert!(MT256::validate_proof(&proof1, root).is_ok());
-        assert!(MT256::validate_proof(&proof2, root).is_ok());
+        assert!(MT256::<GE>::validate_proof(&proof1, root).is_ok());
+        assert!(MT256::<GE>::validate_proof(&proof2, root).is_ok());
     }
 }

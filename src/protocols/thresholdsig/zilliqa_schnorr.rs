@@ -30,7 +30,10 @@ use curv::cryptographic_primitives::commitments::traits::Commitment;
 use curv::cryptographic_primitives::hashing::hash_sha256::HSha256;
 use curv::cryptographic_primitives::hashing::traits::Hash;
 pub use curv::cryptographic_primitives::secret_sharing::feldman_vss::VerifiableSS;
-pub use curv::{BigInt, FE, GE};
+pub use curv::BigInt;
+
+type GE = curv::elliptic::curves::secp256_k1::GE;
+type FE = curv::elliptic::curves::secp256_k1::FE;
 
 const SECURITY: usize = 256;
 
@@ -54,7 +57,7 @@ pub struct KeyGenBroadcastMessage2 {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct KeyGenMessage3 {
-    pub vss_scheme: VerifiableSS,
+    pub vss_scheme: VerifiableSS<GE>,
     pub secret_share: FE, // different per party, thus not a broadcast message
 }
 
@@ -80,7 +83,7 @@ pub struct SharedKeys {
 pub struct Share {
     pub id: String,
     pub shared_key: SharedKeys,
-    pub vss_scheme_vec: Vec<VerifiableSS>,
+    pub vss_scheme_vec: Vec<VerifiableSS<GE>>,
 }
 
 impl Keys {
@@ -115,7 +118,7 @@ impl Keys {
         decom1_vec: &Vec<KeyGenBroadcastMessage2>,
         bc1_vec: &Vec<KeyGenBroadcastMessage1>,
         parties: &[usize],
-    ) -> Result<(VerifiableSS, Vec<FE>, usize), Error> {
+    ) -> Result<(VerifiableSS<GE>, Vec<FE>, usize), Error> {
         // test length:
         assert_eq!(decom1_vec.len(), params.share_count);
         assert_eq!(bc1_vec.len(), params.share_count);
@@ -154,7 +157,7 @@ impl Keys {
         params: &Parameters,
         y_vec: &Vec<GE>,
         secret_shares_vec: &Vec<FE>,
-        vss_scheme_vec: &Vec<VerifiableSS>,
+        vss_scheme_vec: &Vec<VerifiableSS<GE>>,
         index: &usize,
     ) -> Result<SharedKeys, Error> {
         assert_eq!(y_vec.len(), params.share_count);
@@ -239,9 +242,9 @@ impl LocalSig {
     pub fn verify_local_sigs(
         gamma_vec: &Vec<LocalSig>,
         parties_index_vec: &[usize],
-        vss_private_keys: &Vec<VerifiableSS>,
-        vss_ephemeral_keys: &Vec<VerifiableSS>,
-    ) -> Result<VerifiableSS, Error> {
+        vss_private_keys: &Vec<VerifiableSS<GE>>,
+        vss_ephemeral_keys: &Vec<VerifiableSS<GE>>,
+    ) -> Result<VerifiableSS<GE>, Error> {
         //parties_index_vec is a vector with indices of the parties that are participating and provided gamma_i for this step
         // test that enough parties are in this round
         assert!(parties_index_vec.len() > vss_private_keys[0].parameters.threshold);
@@ -301,7 +304,7 @@ pub struct Signature {
 
 impl Signature {
     pub fn generate(
-        vss_sum_local_sigs: &VerifiableSS,
+        vss_sum_local_sigs: &VerifiableSS<GE>,
         local_sig_vec: &Vec<LocalSig>,
         parties_index_vec: &[usize],
         v: &GE,

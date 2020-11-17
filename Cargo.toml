@@ -1,6 +1,6 @@
 [package]
 name = "multi-party-schnorr"
-version = "0.4.0"
+version = "0.4.2"
 authors = [
     "Omer <omer@kzencorp.com>",
     "Gary <gary@kzencorp.com>",
@@ -13,11 +13,11 @@ crate-type = ["lib"]
 [dependencies]
 serde = "1.0"
 serde_derive = "1.0"
-curv = { git = "https://github.com/KZen-networks/curv" , tag = "v0.2.4", features =  ["ec_secp256k1","merkle"]}
+curv = { git = "https://github.com/KZen-networks/curv" , tag = "v0.3.4"}
 
 [dependencies.centipede]
 git = "https://github.com/KZen-networks/centipede"
-tag = "v0.2.3"
+tag = "v0.2.8"
 
 [dev-dependencies]
 hex = "0.3.2"
