@@ -46,7 +46,7 @@ Get Started
 
 Contact
 -------------------
-Feel free to [reach out](mailto:github@kzencorp.com) or join the ZenGo X [Telegram](https://t.me/zengo_x) for discussions on code and research.
+Feel free to [reach out](mailto:github@kzencorp.com) or join the ZenGo X [Telegram](https://t.me/joinchat/ET1mddGXRoyCxZ-7) for discussions on code and research.
 
 License
 -------
