@@ -221,13 +221,13 @@ impl LocalSig {
         /*
         let hash_in_concat = local_ephemaral_key.y.bytes_compressed_to_big_int()
             + (local_private_key.y.bytes_compressed_to_big_int() << 264)
-            + (BigInt::from(message) << 528);
+            + (BigInt::from_bytes(message) << 528);
         let e_bn = HSha256::create_hash(&[&hash_in_concat]);
         */
         let e_bn = HSha256::create_hash(&[
             &local_ephemaral_key.y.bytes_compressed_to_big_int(),
             &local_private_key.y.bytes_compressed_to_big_int(),
-            &BigInt::from(message),
+            &BigInt::from_bytes(message),
         ]);
 
         let e: FE = ECScalar::from(&e_bn);
@@ -322,13 +322,13 @@ impl Signature {
         /*
         let hash_in_concat = v.bytes_compressed_to_big_int()
             + (Y.bytes_compressed_to_big_int() << 264)
-            + (BigInt::from(message) << 528);
+            + (BigInt::from_bytes(message) << 528);
         let r = HSha256::create_hash(&[&hash_in_concat]);
         */
         let r = HSha256::create_hash(&[
             &v.bytes_compressed_to_big_int(),
             &Y.bytes_compressed_to_big_int(),
-            &BigInt::from(message),
+            &BigInt::from_bytes(message),
         ]);
 
         Signature {
@@ -345,14 +345,14 @@ impl Signature {
         /*
         let hash_in_concat = sg_plus_ey.bytes_compressed_to_big_int()
             + (pubkey_y.bytes_compressed_to_big_int() << 264)
-            + (BigInt::from(message) << 528);
+            + (BigInt::from_bytes(message) << 528);
         let r = HSha256::create_hash(&[&hash_in_concat]);
         */
 
         let r = HSha256::create_hash(&[
             &sg_plus_ey.bytes_compressed_to_big_int(),
             &pubkey_y.bytes_compressed_to_big_int(),
-            &BigInt::from(message),
+            &BigInt::from_bytes(message),
         ]);
         let r: FE = ECScalar::from(&r);
 

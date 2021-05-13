@@ -18,6 +18,7 @@
 //! Schnorr {n,n}-Signatures based on Accountable-Subgroup Multisignatures
 //!
 //See (https://pdfs.semanticscholar.org/6bf4/f9450e7a8e31c106a8670b961de4735589cf.pdf)
+use curv::arithmetic::Converter;
 use curv::elliptic::curves::traits::*;
 use curv::BigInt;
 
@@ -180,7 +181,7 @@ impl EphKey {
             .iter()
             .fold(first_eph_pub_key, |acc, x| acc.add_point(&x.get_element()));
         //TODO: maybe there is a better way?
-        let m_fe: FE = ECScalar::from(&BigInt::from(message));
+        let m_fe: FE = ECScalar::from(&BigInt::from_bytes(message));
         let base_point: GE = GE::generator();
         let m_ge = base_point.scalar_mul(&m_fe.get_element());
         let e = multisig::hash_4(&[&sum_pub_eph, &m_ge, &sum_pub]);
