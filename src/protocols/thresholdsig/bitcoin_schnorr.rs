@@ -188,11 +188,11 @@ impl LocalSig {
         let message_len_bits = message.len() * 8;
         let R = local_ephemeral_key.y.bytes_compressed_to_big_int();
         let X = local_private_key.y.bytes_compressed_to_big_int();
-        let X_vec = BigInt::to_vec(&X);
+        let X_vec = BigInt::to_bytes(&X);
         let X_vec_len_bits = X_vec.len() * 8;
         let e_bn = HSha256::create_hash_from_slice(
-            &BigInt::to_vec(
-                &((((R << X_vec_len_bits) + X) << message_len_bits) + BigInt::from(message)),
+            &BigInt::to_bytes(
+                &((((R << X_vec_len_bits) + X) << message_len_bits) + BigInt::from_bytes(message)),
             )[..],
         );
 
@@ -284,7 +284,7 @@ impl Signature {
         let e_bn = HSha256::create_hash(&[
             &self.v.bytes_compressed_to_big_int(),
             &pubkey_y.bytes_compressed_to_big_int(),
-            &BigInt::from(message),
+            &BigInt::from_bytes(message),
         ]);
         let e: FE = ECScalar::from(&e_bn);
 

@@ -150,7 +150,7 @@ impl EphemeralKey {
     pub fn create_from_private_key(x1: &KeyPair, message: &[u8]) -> EphemeralKey {
         let base_point: GE = ECPoint::generator();
         let hash_private_key_message =
-            HSha256::create_hash(&[&x1.private_key.to_big_int(), &BigInt::from(message)]);
+            HSha256::create_hash(&[&x1.private_key.to_big_int(), &BigInt::from_bytes(message)]);
         let ephemeral_private_key: FE = ECScalar::from(&hash_private_key_message);
         let ephemeral_public_key = base_point.scalar_mul(&ephemeral_private_key.get_element());
         let (commitment, blind_factor) =
@@ -183,13 +183,13 @@ impl EphemeralKey {
                 &BigInt::from(0),
                 &r_hat.x_coor().unwrap(),
                 &apk.bytes_compressed_to_big_int(),
-                &BigInt::from(message),
+                &BigInt::from_bytes(message),
             ])
         } else {
             HSha256::create_hash(&[
                 &r_hat.x_coor().unwrap(),
                 &apk.bytes_compressed_to_big_int(),
-                &BigInt::from(message),
+                &BigInt::from_bytes(message),
             ])
         }
     }
@@ -227,13 +227,13 @@ pub fn verify(
             &BigInt::from(0),
             &r_x,
             &apk.bytes_compressed_to_big_int(),
-            &BigInt::from(message),
+            &BigInt::from_bytes(message),
         ])
     } else {
         HSha256::create_hash(&[
             r_x,
             &apk.bytes_compressed_to_big_int(),
-            &BigInt::from(message),
+            &BigInt::from_bytes(message),
         ])
     };
 

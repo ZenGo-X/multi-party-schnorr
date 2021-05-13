@@ -241,7 +241,7 @@ impl State {
             for i in 0..Nv {
                 hnon_preimage.push(R_j_vec[i].bytes_compressed_to_big_int());
             }
-            hnon_preimage.push(BigInt::from(message));
+            hnon_preimage.push(BigInt::from_bytes(message));
             hnon_preimage.push(BigInt::from(j as i32));
             let b_j = HSha256::create_hash(&hnon_preimage.iter().collect::<Vec<_>>());
             b_coefficients.push(b_j);
